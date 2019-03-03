@@ -50,10 +50,12 @@ function qualityPickerPlugin() {
                 let label = quality.label;
                 if(i==qualityList.length-1) {
                   quality.label = quality.label + ' (Source)';
-                  const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
-                  const item = inner.children()[0];
-                  item.children()[0].el_.children[3].innerHTML = quality.label;
-                  window.localStorage.setItem('lastSourceLabel', quality.label);
+                  if(qualityList.length == 1) {
+                    const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
+                    const item = inner.children()[0];
+                    item.children()[0].el_.children[3].innerHTML = quality.label;
+                    window.localStorage.setItem('lastSourceLabel', quality.label);
+                  }
                 }
                 if(label == '1250kbps') {
                   quality.label = '480p';
