@@ -31,7 +31,6 @@ button.vjs-settings-menu {
 
 .pl-menu__inner {
     width: 190px;
-    height: 250px;
     padding: .5rem 0;
     overflow: hidden;
 }
@@ -49,7 +48,7 @@ button.vjs-settings-menu {
 }
 
 .pl-toggle__button {
-    content: ""; 
+    content: "";
     display: inline-block;
     background-color: #b8b5c0;
     width: 3.125rem;
@@ -201,7 +200,6 @@ input, textarea, select, button {
 }
 
 .pl-menu__item--block, .pl-menu__item--block button {
-    height: 30px;
     line-height: 30px !important;
 }
 
