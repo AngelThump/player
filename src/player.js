@@ -91,7 +91,7 @@ export default class VideoPlayer extends React.Component {
                 playerTranscodeReady = transcode;
                 setTimeout(function() {
                     player.trigger('public');
-                }, 5000);
+                }, 10000);
             });
             viewerAPISocket.on('live', (liveBoolean) => {
                 console.log("socket sent live: " + liveBoolean);
