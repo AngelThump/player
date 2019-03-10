@@ -21,7 +21,8 @@ export default class PasswordProtected extends React.Component {
     componentWillUnmount() {
     }
 
-    submit() {
+    submit(event) {
+        event.preventDefault();
         fetch('https://api.angelthump.com/user/v2/password', {
             method: 'post',
             body: JSON.stringify({
@@ -63,7 +64,7 @@ export default class PasswordProtected extends React.Component {
                             </div> : null
                         }
                         <div className='form' id='form'>
-                            <form id='password-form'>
+                            <form id='password-form' onSubmit={this.submit}>
                                 <input id='streampassword' type='password' name='password' placeholder='enter the stream password'></input>
                                 <button type='button' id='submit' onClick={this.submit}>Submit</button>
                             </form>
