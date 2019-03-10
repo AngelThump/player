@@ -182,9 +182,10 @@ export default class VideoPlayer extends React.Component {
                                 })
                             }
                         } else {
-                            alert("You are not a patron!");
+                            alert("You are not a patron! If you are, did you link your account?");
                             document.getElementById('patreon-toggle').checked = false;
                             window.localStorage.setItem('patreon', false);
+                            window.open('https://angelthump.com/patron', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
                         }
                         auth.disconnect();
                     }).catch(function(error){
