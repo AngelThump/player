@@ -170,6 +170,8 @@ export default class VideoPlayer extends React.Component {
                         app.set('user', userVar);
                         let user = app.get('user');
                         if (user.isPatron || user.partner) {
+                            //hide logo
+                            document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
                             if(playerTranscodeReady) {
                                 player.src({
                                     type: "application/x-mpegURL",
