@@ -36,6 +36,8 @@ const videoJsOptions = {
         'fullscreenToggle':{}
         }
     },
+    fill: true,
+    responsive: true,
     VideoStatsUL: {version: '1.0.0'}
 }
 
