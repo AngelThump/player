@@ -47,7 +47,7 @@ export default class VideoPlayer extends React.Component {
 
         player.logobrand({
             image: logo,
-            destination: "https://patreon.com/angelthump"
+            destination: "https://www.patreon.com/join/angelthump"
         });
         player.persistvolume({
             namespace: "volume"
@@ -91,7 +91,7 @@ export default class VideoPlayer extends React.Component {
                 playerTranscodeReady = transcode;
                 setTimeout(function() {
                     player.trigger('public');
-                }, 10000);
+                }, 1000 * 30);
             });
             viewerAPISocket.on('live', (liveBoolean) => {
                 console.log("socket sent live: " + liveBoolean);
