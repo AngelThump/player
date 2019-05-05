@@ -12,7 +12,9 @@ const videoJsOptions = {
     html5: {
         hlsjsConfig: {
             debug: false,
-            startLevel: window.localStorage.getItem('lastSourceID') || 0
+            startLevel: window.localStorage.getItem('lastSourceID') || 0,
+            liveSyncDurationCount: 2,
+            maxLoadingDelay: 5
         }
     },
     chromecast:{
@@ -38,7 +40,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.0'}
+    VideoStatsUL: {version: '1.0.1'}
 }
 
 if(channel) {

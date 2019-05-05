@@ -9,9 +9,10 @@ window.videojs = videojs;
 import React from 'react';
 import hlsjs from 'videojs-hlsjs-plugin';
 hlsjs.register(videojs);
+/*
 videojs.Html5Hlsjs.addHook('beforeinitialize', (videojsPlayer, hlsjsInstance) => {
     //console.log(hlsjsInstance);
-});
+});*/
 import canAutoplay from 'can-autoplay';
 import './settings/videostats-ul';
 import './settings/settings-menu-button';
@@ -224,7 +225,7 @@ export default class VideoPlayer extends React.Component {
 
             let connect = () => {
                 player.poster(poster);
-                viewerSocket = io('https://viewer-api.angelthump.com:3030', {
+                viewerSocket = io('https://viewer-api.angelthump.com:3031', {
                     transports: ['websocket']
                 });
                 viewerSocket.on('connect', () => {
