@@ -32,7 +32,7 @@ const videoJsOptions = {
 
         'flexibleWidthSpacer':{},
         'progressControl':{},
-        
+
         'chromeCastButton':{},
         'settingsMenuButton': {},
         'fullscreenToggle':{}
@@ -41,6 +41,17 @@ const videoJsOptions = {
     fill: true,
     responsive: true,
     VideoStatsUL: {version: '1.0.1'}
+}
+
+if (typeof window.MediaSource === 'undefined') {
+    videoJsOptions.html5 = {
+        hls: {
+            overrideNative: false
+        },
+        nativeVideoTracks: true,
+        nativeAudioTracks: true,
+        nativeTextTracks: true
+    };
 }
 
 if(channel) {
