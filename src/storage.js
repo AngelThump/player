@@ -8,19 +8,19 @@ class TempStorage {
   }
 
   getItem(key) {
-    return data[key];
+    return this.data[key];
   }
 
   key(n) {
-    return Object.keys(data)[n];
+    return Object.keys(this.data)[n];
   }
 
   removeItem(key) {
-    data[key] = null;
+    this.data[key] = null;
   }
 
   setItem(key, value) {
-    data[key] = value;
+    this.data[key] = value;
   }
 }
 
