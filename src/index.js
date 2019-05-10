@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import storage from './storage';
 
 let search = window.location.search;
 let params = new URLSearchParams(search);
@@ -12,7 +13,7 @@ const videoJsOptions = {
     html5: {
         hlsjsConfig: {
             debug: false,
-            startLevel: window.localStorage.getItem('lastSourceID') || 0,
+            startLevel: storage.getItem('lastSourceID') || 0,
             liveSyncDurationCount: 2,
             maxLoadingDelay: 5
         }

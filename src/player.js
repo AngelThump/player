@@ -23,13 +23,14 @@ require('./videojs-persistvolume');
 import io from 'socket.io-client';
 import feathers from '@feathersjs/client';
 import 'videojs-hotkeys';
+import storage from './storage';
 
 /*TODO: When offline, change back to offline background img? Or use a div overlay for offline image when offline.
- *      Figure out video stats via hls.js. bitrate,buffersize,etc like twitch    
+ *      Figure out video stats via hls.js. bitrate,buffersize,etc like twitch
  */
 
 export default class VideoPlayer extends React.Component {
-    
+
     constructor(props) {
         super(props);
      }
@@ -73,7 +74,7 @@ export default class VideoPlayer extends React.Component {
         if(data) {
             let { live, poster, thumbnail, playerTranscodeReady, title, viewers, isPatron } = data;
             let viewerSocket, viewerAPISocket, requestTime = 1000;
-            let patreon = JSON.parse(window.localStorage.getItem('patreon')) || false;
+            let patreon = JSON.parse(storage.getItem('patreon')) || false;
 
             viewerAPISocket = io('https://viewer-api.angelthump.com', {
                 transports: ['websocket']
@@ -101,7 +102,7 @@ export default class VideoPlayer extends React.Component {
                     retry();
                 }, 3000);
             });
-            
+
             player.bigPlayButton.hide();
             if(!live) {
                 player.poster(poster);
@@ -110,7 +111,7 @@ export default class VideoPlayer extends React.Component {
                     player.poster(poster);
                 }, 5000);
             }
-            
+
             player.on("pause", () => {
                 player.bigPlayButton.show();
                 document.getElementById('paused-overlay').style.visibility='visible';
@@ -150,57 +151,53 @@ export default class VideoPlayer extends React.Component {
             })
 
             player.on('patreon', () => {
-                if (localStorage !== null) {
-                    let auth = io("https://angelthump.com", {
-                        transports: ['websocket'],
-                        forceNew: true
-                    });
+                let auth = io("https://angelthump.com", {
+                    transports: ['websocket'],
+                    forceNew: true
+                });
 
-                    let app = feathers()
-                    .configure(feathers.socketio(auth))
-                    .configure(feathers.authentication());
-                    app.authenticate()
-                    .then(response => {
-                        console.log('Authenticated!');
-                        return app.passport.verifyJWT(response.accessToken);
-                    })
-                    .then(payload => {
-                        return app.service('users').get(payload.userId);
-                    })
-                    .then(userVar => {
-                        app.set('user', userVar);
-                        let user = app.get('user');
-                        if (user.isPatron || user.partner) {
-                            //hide logo
-                            document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
-                            if(playerTranscodeReady) {
-                                player.src({
-                                    type: "application/x-mpegURL",
-                                    src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
-                                })
-                            } else {
-                                player.src({
-                                    type: "application/x-mpegURL",
-                                    src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
-                                })
-                            }
+                let app = feathers()
+                .configure(feathers.socketio(auth))
+                .configure(feathers.authentication());
+                app.authenticate()
+                .then(response => {
+                    console.log('Authenticated!');
+                    return app.passport.verifyJWT(response.accessToken);
+                })
+                .then(payload => {
+                    return app.service('users').get(payload.userId);
+                })
+                .then(userVar => {
+                    app.set('user', userVar);
+                    let user = app.get('user');
+                    if (user.isPatron || user.partner) {
+                        //hide logo
+                        document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
+                        if(playerTranscodeReady) {
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
+                            })
                         } else {
-                            alert("You are not a patron! If you are, did you link your account?");
-                            document.getElementById('patreon-toggle').checked = false;
-                            window.localStorage.setItem('patreon', false);
-                            window.open('https://angelthump.com/patron', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
+                            })
                         }
-                        auth.disconnect();
-                    }).catch(function(error){
-                        console.error('Error authenticating!', error);
-                        window.open('https://angelthump.com/login', 'AngelThump Login','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                    } else {
+                        alert("You are not a patron! If you are, did you link your account?");
                         document.getElementById('patreon-toggle').checked = false;
-                        window.localStorage.setItem('patreon', false);
-                        auth.disconnect();
-                    });
-                } else {
-                    alert('You must enable 3rd party cookies in your browser before using Patreon servers!');
-                }
+                        storage.setItem('patreon', false);
+                        window.open('https://angelthump.com/patron', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                    }
+                    auth.disconnect();
+                }).catch(function(error){
+                    console.error('Error authenticating!', error);
+                    window.open('https://angelthump.com/login', 'AngelThump Login','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                    document.getElementById('patreon-toggle').checked = false;
+                    storage.setItem('patreon', false);
+                    auth.disconnect();
+                });
             })
 
             player.on('public', () => {
@@ -237,7 +234,7 @@ export default class VideoPlayer extends React.Component {
                 if(live) {
                     setTimeout(function() {
                         player.trigger('public');
-        
+
                         if (requestTime < 16000) {
                             requestTime = requestTime * 2;
                         }

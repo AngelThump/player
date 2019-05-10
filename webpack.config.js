@@ -27,6 +27,8 @@ module.exports = {
   optimization: {
     minimizer: [
       new UglifyJsPlugin({
+        parallel: true,
+        cache: true,
         uglifyOptions: {
           sourceMap: true,
           warnings: false,

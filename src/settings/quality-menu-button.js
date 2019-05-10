@@ -1,6 +1,7 @@
 import videojs from 'video.js';
 const Button = videojs.getComponent('Button');
 const dom = videojs.dom || videojs;
+import storage from '../storage';
 
 /**
  * The specific menu item type for selecting a setting
@@ -33,7 +34,7 @@ class QualityMenuButton extends Button {
    */
   handleClick(event) {
     super.handleClick(event);
-    
+
     const player = this.player();
     const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
     const item = inner.children()[0];
@@ -51,7 +52,7 @@ class QualityMenuButton extends Button {
   //get source from local storage, otherwise default to auto.
   update() {
     let el = this.el();
-    let label = window.localStorage.getItem('lastSourceLabel') || 'Auto';
+    let label = storage.getItem('lastSourceLabel') || 'Auto';
     el.children[3].innerHTML = label;
   }
 }
