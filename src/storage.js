@@ -24,4 +24,4 @@ class TempStorage {
   }
 }
 
-export default window.LocalStorage || new TempStorage();
+export default window.localStorage || new TempStorage();
