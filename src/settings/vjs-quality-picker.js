@@ -2,6 +2,8 @@
 import QualitySubMenuItemDiv from './quality-submenu-item-div';
 import QualityButton from './quality-button';
 import videojs from 'video.js';
+import storage from '../storage';
+
 function qualityPickerPlugin() {
     let player = this;
 
@@ -34,7 +36,7 @@ function qualityPickerPlugin() {
               let quality = qualityList[i];
               quality.label = 'Source';
               let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: false });
-          
+
               let button = new QualityButton(player, options);
               qualitySubMenuItemDiv.addChild(button);
             } else {
@@ -44,7 +46,7 @@ function qualityPickerPlugin() {
               let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
               let button = new QualityButton(player, options);
               qualitySubMenuItemDiv.addChild(button);
-              
+
               for (let i=qualityList.length-1; i > 0; i--) {
                 let quality = qualityList[i];
                 let label = quality.label;
@@ -54,14 +56,14 @@ function qualityPickerPlugin() {
                     const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
                     const item = inner.children()[0];
                     item.children()[0].el_.children[3].innerHTML = quality.label;
-                    window.localStorage.setItem('lastSourceLabel', quality.label);
+                    storage.setItem('lastSourceLabel', quality.label);
                   }
                 }
                 if(label == '1250kbps') {
                   quality.label = '480p';
                 }
                 let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
-            
+
                 let button = new QualityButton(player, options);
                 qualitySubMenuItemDiv.addChild(button);
               }
