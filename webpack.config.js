@@ -1,11 +1,13 @@
 const path = require('path');
 const CompressionPlugin = require('compression-webpack-plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: './src/index.js',
   output: {
-    filename: 'main.js',
+    filename: 'main.[hash].js',
+    chunkFilename: '[id].[chunkhash].js',
     path: path.resolve(__dirname, 'dist')
   },
   module: {
@@ -53,6 +55,9 @@ module.exports = {
       test: /\.js$|\.css$|\.html$|\.eot?.+$|\.ttf?.+$|\.woff?.+$|\.svg?.+$/,
       threshold: 10240,
       minRatio: 0.8
+    }),
+    new HtmlWebpackPlugin({
+      template: 'src/index.html',
     })
   ],
   node: {
