@@ -8,6 +8,11 @@
 }
 .video-js .vjs-slider {
     outline: 0;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+.video-js .vjs-button,
+.video-js .vjs-volume-level {
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 }
 .video-js .vjs-control {
     outline: none;
