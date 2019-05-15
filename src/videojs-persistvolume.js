@@ -20,7 +20,7 @@ import storage from './storage';
   }
 
 })(function(window, document, vjs) {
-  extend = function(obj) {
+  const extend = function(obj) {
     var arg, i, k;
     for (i = 1; i < arguments.length; i++) {
       arg = arguments[i];
@@ -44,8 +44,8 @@ import storage from './storage';
     var key = settings.namespace + '-' + 'volume';
     var muteKey = settings.namespace + '-' + 'mute';
     player.on("volumechange", function() {
-      setStorageItem(key, player.volume());
-      setStorageItem(muteKey, player.muted());
+      storage.setItem(key, player.volume());
+      storage.setItem(muteKey, player.muted());
     });
 
     player.ready(function() {
