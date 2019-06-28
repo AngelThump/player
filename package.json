@@ -1,6 +1,6 @@
 {
   "name": "angelthump-player",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Player for AngelThump",
   "scripts": {
     "start": "webpack-dev-server --mode development",

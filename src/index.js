@@ -41,7 +41,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.1'}
+    VideoStatsUL: {version: '1.0.2'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -60,20 +60,30 @@ if(channel) {
     fetch(API + channel)
     .then(response => response.json())
     .then(data => {
-        if(!data.passwordProtected) {
-            import('./player').then(VideoPlayer => {
+        if(data.banned) {
+            import('./banned').then(Banned => {
                 ReactDOM.render(
-                <div className="player">
-                    <VideoPlayer.default options={videoJsOptions} channel={channel} data={data}/>
+                <div className="banned">
+                    <Banned.default options={videoJsOptions} channel={channel} data={data}/>
                 </div>, document.getElementById('root'));
             })
-        } else {
-            import('./password-protected').then(PasswordProtected => {
-                ReactDOM.render(
-                <div className="player">
-                    <PasswordProtected.default options={videoJsOptions} channel={channel} data={data}/>
-                </div>, document.getElementById('root'));
-            })
+        } 
+        else {
+            if(!data.passwordProtected) {
+                import('./player').then(VideoPlayer => {
+                    ReactDOM.render(
+                    <div className="player">
+                        <VideoPlayer.default options={videoJsOptions} channel={channel} data={data}/>
+                    </div>, document.getElementById('root'));
+                })
+            } else {
+                import('./password-protected').then(PasswordProtected => {
+                    ReactDOM.render(
+                    <div className="player">
+                        <PasswordProtected.default options={videoJsOptions} channel={channel} data={data}/>
+                    </div>, document.getElementById('root'));
+                })
+            }
         }
     }).catch(() => {
         import('./player').then(VideoPlayer => {

@@ -1,0 +1,16 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto:300);
+
+.banned {
+  width: 405px;
+  padding: 8% 0 0;
+  margin: auto;
+}
+
+.banned-text {
+    font-size: 18px;
+    font-weight: normal;
+    margin: 0px;
+    padding: 0px;
+    font-family: Helvetica Neue,Arial,sans-serif;
+    text-align: center;
+}
