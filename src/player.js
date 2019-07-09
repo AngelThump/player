@@ -26,7 +26,8 @@ import 'videojs-hotkeys';
 import storage from './storage';
 
 /*TODO: When offline, change back to offline background img? Or use a div overlay for offline image when offline.
- *      Figure out video stats via hls.js. bitrate,buffersize,etc like twitch
+ *      Figure out video stats via hls.js. bitrate,buffersize,etc
+ *      Server list
  */
 
 export default class VideoPlayer extends React.Component {

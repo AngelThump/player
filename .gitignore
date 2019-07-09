@@ -2,3 +2,4 @@ dist/*.js
 dist/*.gz
 dist/index.html
 node_modules
+dist/beta

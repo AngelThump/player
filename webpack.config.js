@@ -8,6 +8,7 @@ module.exports = {
   output: {
     filename: 'main.[hash].js',
     chunkFilename: '[id].[chunkhash].js',
+    //dist or beta dist/beta
     path: path.resolve(__dirname, 'dist')
   },
   module: {
