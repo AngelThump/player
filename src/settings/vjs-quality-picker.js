@@ -47,6 +47,32 @@ function qualityPickerPlugin() {
               let button = new QualityButton(player, options);
               qualitySubMenuItemDiv.addChild(button);
 
+              //hardcode source to be not transcode?
+
+              /*
+              for (let i=0; i < qualityList.length; i--) {
+                let quality = qualityList[i];
+                let label = quality.label;
+                if(i==0) {
+                  quality.label = quality.label + ' (Source)';
+                  if(qualityList.length == 1) {
+                    const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
+                    const item = inner.children()[0];
+                    item.children()[0].el_.children[3].innerHTML = quality.label;
+                    storage.setItem('lastSourceLabel', quality.label);
+                  }
+                }
+                
+                if(label == '1250kbps') {
+                  quality.label = '480p';
+                }
+                let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
+
+                let button = new QualityButton(player, options);
+                qualitySubMenuItemDiv.addChild(button);
+              }*/
+
+              
               for (let i=qualityList.length-1; i > 0; i--) {
                 let quality = qualityList[i];
                 let label = quality.label;
