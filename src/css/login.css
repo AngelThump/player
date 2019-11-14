@@ -1,6 +1,8 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:300);
-
-.at-password {
+body {
+  background-color: rgb(15, 14, 17);
+}
+.login-page {
   width: 405px;
   padding: 8% 0 0;
   margin: auto;
@@ -38,7 +40,6 @@
   -webkit-transition: all 0.3 ease;
   transition: all 0.3 ease;
   cursor: pointer;
-  text-align: center;
 }
 .form button:hover,.form button:active {
   background: #41b5f4;

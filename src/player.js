@@ -3,6 +3,8 @@ require('!style-loader!css-loader!video.js/dist/video-js.css')
 require('!style-loader!css-loader!./css/player.css')
 require('!style-loader!css-loader!./css/videojs-logobrand.css')
 require('!style-loader!css-loader!./css/videojs-chromecast.css')
+require('!style-loader!css-loader!./css/login.css')
+import "babel-polyfill";
 import logo from '../dist/assets/patreon.png';
 import videojs from 'video.js';
 window.videojs = videojs;
@@ -34,7 +36,7 @@ export default class VideoPlayer extends React.Component {
 
     constructor(props) {
         super(props);
-     }
+    }
 
     componentDidMount() {
         this.player = videojs(this.videoNode, this.props.options, () => {
@@ -152,25 +154,15 @@ export default class VideoPlayer extends React.Component {
             })
 
             player.on('patreon', () => {
-                let auth = io("https://angelthump.com", {
-                    transports: ['websocket'],
-                    forceNew: true
-                });
+                const auth = io("https://sso.angelthump.com");
 
-                let app = feathers()
+                const app = feathers()
                 .configure(feathers.socketio(auth))
                 .configure(feathers.authentication());
-                app.authenticate()
-                .then(response => {
-                    console.log('Authenticated!');
-                    return app.passport.verifyJWT(response.accessToken);
-                })
-                .then(payload => {
-                    return app.service('users').get(payload.userId);
-                })
-                .then(userVar => {
-                    app.set('user', userVar);
-                    let user = app.get('user');
+
+                app.reAuthenticate()
+                .then(async () => {
+                    const {user} = await app.get('authentication');
                     if (user.isPatron || user.partner) {
                         //hide logo
                         document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
@@ -189,15 +181,56 @@ export default class VideoPlayer extends React.Component {
                         alert("You are not a patron! If you are, did you link your account?");
                         document.getElementById('patreon-toggle').checked = false;
                         storage.setItem('patreon', false);
-                        window.open('https://angelthump.com/patron', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                        window.open('https://angelthump.com/dashboard/patreon', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
                     }
                     auth.disconnect();
                 }).catch(function(error){
                     console.error('Error authenticating!', error);
-                    window.open('https://angelthump.com/login', 'AngelThump Login','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+
+                    let loginPage = document.createElement('div');
+                    loginPage.setAttribute('class', 'login-page');
+                    loginPage.innerHTML = "<a href='/'><img src='/assets/small_logo.png'></a><div class='error' id='error' style='display: none; text-align: center;'>Wrong Username/Password! Please try again!</div><div class='form'><form id='loginForm' class='login-form' onsubmit='return false'><input id='strategy' type='hidden' name='strategy' value='local'><input id='user' type='user' name='user' placeholder='username' autocomplete='off'><input id='password' type='password' name='password' placeholder='password' autocomplete='off'><button type='submit' id='login'>login</button></form></div>"
+
+                    const modalOptions = {
+                        content: loginPage
+                    };
+
+                    const ModalDialog = videojs.getComponent('ModalDialog');
+                    const loginModal = new ModalDialog(player, modalOptions);
+
+                    player.addChild(loginModal);
+                    loginModal.open();
+
+                    const getCredentials = () => {
+                        var payload;
+                        var user = {
+                            username: document.getElementById('user').value,
+                            password: document.getElementById('password').value
+                        };
+                        payload = user ? Object.assign({ strategy: 'local' }, user) : {};
+                        return payload;
+                    }
+
+                    const login = async (payload) => {
+                        await app.authenticate(payload)
+                        .then(() => {
+                            loginModal.close();
+                            player.trigger('patreon');
+                            document.getElementById('patreon-toggle').checked = true;
+                            storage.setItem('patreon', true);
+                        }).catch(function(error) {
+                            document.getElementById("error").style.display = 'block';
+                            console.error('Error authenticating!', error);
+                        });
+                        auth.disconnect();
+                    }
+
+                    document.getElementById("login").addEventListener("click", () => {
+                        login(getCredentials());
+                    });
+
                     document.getElementById('patreon-toggle').checked = false;
                     storage.setItem('patreon', false);
-                    auth.disconnect();
                 });
             })
 

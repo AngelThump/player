@@ -15,6 +15,7 @@ const videoJsOptions = {
             debug: false,
             startLevel: storage.getItem('lastSourceID') || 0,
             liveSyncDurationCount: 2
+            //loader: FetchLoader
         }
     },
     chromecast:{
@@ -40,7 +41,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.5'}
+    VideoStatsUL: {version: '1.0.7'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -63,11 +64,10 @@ if(channel) {
             import('./banned').then(Banned => {
                 ReactDOM.render(
                 <div className="banned">
-                    <Banned.default options={videoJsOptions} channel={channel} data={data}/>
+                    <Banned.default channel={channel}/>
                 </div>, document.getElementById('root'));
             })
-        } 
-        else {
+        } else {
             if(!data.passwordProtected) {
                 import('./player').then(VideoPlayer => {
                     ReactDOM.render(

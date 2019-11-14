@@ -1,5 +1,13 @@
 @import url(https://fonts.googleapis.com/css?family=Roboto:300);
 
+body {
+  background-color: rgb(15, 14, 17);
+}
+
+h1 {
+  color: #D3D3D3;
+}
+
 .banned {
   width: 405px;
   padding: 8% 0 0;

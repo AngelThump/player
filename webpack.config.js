@@ -1,7 +1,8 @@
-const path = require('path');
+const { resolve } = require('path');
 const CompressionPlugin = require('compression-webpack-plugin');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
   entry: './src/index.js',
@@ -9,7 +10,7 @@ module.exports = {
     filename: 'main.[hash].js',
     chunkFilename: '[id].[chunkhash].js',
     //dist or beta dist/beta
-    path: path.resolve(__dirname, 'dist')
+    path: resolve(__dirname, 'dist')
   },
   module: {
     rules: [{
@@ -28,26 +29,28 @@ module.exports = {
     }]
   },
   optimization: {
-    minimizer: [
-      new UglifyJsPlugin({
-        parallel: true,
-        cache: true,
-        uglifyOptions: {
-          sourceMap: true,
-          warnings: false,
-          parse: {},
-          compress: {},
-          mangle: true,
-          output: {
-            comments: false, // remove all comments
-          },
-          toplevel: false,
-          nameCache: null,
-          ie8: false,
-          keep_fnames: false,
-        },
-      }),
-    ],
+    minimize: true,
+    minimizer: [new TerserPlugin({
+      parallel: true,
+      cache: true,
+      sourceMap: true,
+      extractComments: false,
+      terserOptions: {
+        ecma: undefined,
+        warnings: false,
+        parse: {},
+        compress: {},
+        mangle: true,
+        module: false,
+        output: null,
+        toplevel: false,
+        nameCache: null,
+        ie8: false,
+        keep_classnames: undefined,
+        keep_fnames: false,
+        safari10: false,
+      }
+    })]
   },
   plugins: [
     new CompressionPlugin({
@@ -59,6 +62,11 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: 'src/index.html',
+    }),
+    new CleanWebpackPlugin({
+      dry: false,
+      verbose: true,
+      cleanOnceBeforeBuildPatterns: ['**/*', '!assets/**', '!beta/**']
     })
   ],
   node: {
