@@ -64,9 +64,9 @@ module.exports = {
       template: 'src/index.html',
     }),
     new CleanWebpackPlugin({
-      dry: false,
+      dry: true,
       verbose: true,
-      cleanOnceBeforeBuildPatterns: ['**/*', '!assets/**', '!beta/**']
+      cleanOnceBeforeBuildPatterns: ['**/*', '!assets/**', '!beta/**', '!favicon.ico']
     })
   ],
   node: {

@@ -233,7 +233,7 @@ export default class VideoPlayer extends React.Component {
                     storage.setItem('patreon', false);
                 });
             })
-
+            
             player.on('public', () => {
                 if(playerTranscodeReady) {
                     player.src({
