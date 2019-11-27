@@ -33,6 +33,7 @@ const videoJsOptions = {
 
         'flexibleWidthSpacer':{},
         'progressControl':{},
+        'pictureInPictureToggle':{},
 
         'chromeCastButton':{},
         'settingsMenuButton': {},
@@ -41,7 +42,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.7'}
+    VideoStatsUL: {version: '1.0.8'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
