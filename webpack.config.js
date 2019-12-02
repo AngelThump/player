@@ -12,6 +12,7 @@ module.exports = {
     //dist or beta dist/beta
     path: resolve(__dirname, 'dist')
   },
+  devtool: 'source-map',
   module: {
     rules: [{
       test: /\.(png|woff|woff2|eot|ttf|svg)$/,
@@ -64,7 +65,7 @@ module.exports = {
       template: 'src/index.html',
     }),
     new CleanWebpackPlugin({
-      dry: true,
+      dry: false,
       verbose: true,
       cleanOnceBeforeBuildPatterns: ['**/*', '!assets/**', '!beta/**', '!favicon.ico']
     })

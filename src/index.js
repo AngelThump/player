@@ -42,7 +42,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.8'}
+    VideoStatsUL: {version: '1.0.81'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -51,8 +51,7 @@ if (typeof window.MediaSource === 'undefined') {
             overrideNative: false
         },
         nativeVideoTracks: true,
-        nativeAudioTracks: true,
-        nativeTextTracks: true
+        nativeAudioTracks: true
     };
 }
 

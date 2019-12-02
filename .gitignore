@@ -1,5 +1,2 @@
-dist/*.js
-dist/*.gz
-dist/index.html
+dist/*
 node_modules
-dist/beta
