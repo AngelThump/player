@@ -72,7 +72,6 @@ function qualityPickerPlugin() {
                 qualitySubMenuItemDiv.addChild(button);
               }*/
 
-              
               for (let i=qualityList.length-1; i > 0; i--) {
                 let quality = qualityList[i];
                 let label = quality.label;
@@ -87,6 +86,20 @@ function qualityPickerPlugin() {
                 }
                 if(label == '1250kbps') {
                   quality.label = '480p';
+                }
+
+                let nextLabel = qualityList[i-1].label;
+                if(nextLabel) {
+                  if(label == '720p' && qualityList[i-1].label == '720p') {
+                    //check if source
+                    if(i==qualityList.length-1) {
+                      quality.label = '720p60 (Source)'
+                      qualityList[i-1].label = '720p30'
+                    } else {
+                      quality.label = '720p60'
+                      qualityList[i-1].label = '720p30'
+                    }
+                  }
                 }
                 let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
 

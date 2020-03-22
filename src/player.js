@@ -11,10 +11,6 @@ window.videojs = videojs;
 import React from 'react';
 import hlsjs from 'videojs-hlsjs-plugin';
 hlsjs.register(videojs);
-/*
-videojs.Html5Hlsjs.addHook('beforeinitialize', (videojsPlayer, hlsjsInstance) => {
-    //console.log(hlsjsInstance);
-});*/
 import canAutoplay from 'can-autoplay';
 import './settings/videostats-ul';
 import './settings/settings-menu-button';
@@ -30,6 +26,7 @@ import storage from './storage';
 /*TODO: When offline, change back to offline background img? Or use a div overlay for offline image when offline.
  *      Figure out video stats via hls.js. bitrate,buffersize,etc
  *      Server list
+ *      Display load of region/server the user is assigned to next to server selection
  */
 
 export default class VideoPlayer extends React.Component {
@@ -43,6 +40,11 @@ export default class VideoPlayer extends React.Component {
         });
 
         const player = this.player;
+
+        let hlsTech;
+        player.ready(function() {
+            hlsTech = player.tech({IWillNotUseThisInPlugins: true}.hls);
+        });
 
         canAutoplay.video().then(function(obj) {
             if (obj.result === false) {
@@ -71,7 +73,7 @@ export default class VideoPlayer extends React.Component {
             enableModifiersForNumbers: false,
             enableNumbers: false,
             enableHoverScroll: true
-          });
+        });
 
         let { data, channel } = this.props;
         if(data) {
@@ -91,6 +93,7 @@ export default class VideoPlayer extends React.Component {
             viewerAPISocket.on('redirect', (url) => {
                 window.location = url;
             });
+
             viewerAPISocket.on('transcode', (transcode) => {
                 console.log("socket sent transcode: " + transcode);
                 playerTranscodeReady = transcode;
@@ -127,11 +130,13 @@ export default class VideoPlayer extends React.Component {
             })
 
             player.on("playing", () => {
+                //console.log(hlsTech.hls);
+                //console.log(hlsTech.hls.liveSyncPosition);
                 player.loadingSpinner.show();
                 player.bigPlayButton.hide();
                 document.getElementById('paused-overlay').style.visibility='hidden';
 
-                if(viewerSocket == undefined) {
+                if(!viewerSocket) {
                     connect();
                 } else if (!viewerSocket.connected) {
                     connect();
@@ -144,6 +149,7 @@ export default class VideoPlayer extends React.Component {
                         viewerSocket.disconnect();
                     }
                 }
+
                 player.loadingSpinner.hide();
                 if(e.code != 3) {
                     player.error(null);
@@ -169,13 +175,35 @@ export default class VideoPlayer extends React.Component {
                         if(playerTranscodeReady) {
                             player.src({
                                 type: "application/x-mpegURL",
-                                src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
+                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
                             })
+
+                            let promise = player.play();
+
+                            if (promise !== undefined) {
+                                promise.then(function() {
+                                    // Autoplay started!
+                                }).catch(function(error) {
+                                    // Autoplay was prevented.
+                                    console.log(error)
+                                });
+                            }
                         } else {
                             player.src({
                                 type: "application/x-mpegURL",
-                                src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
+                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
                             })
+
+                            let promise = player.play();
+
+                            if (promise !== undefined) {
+                                promise.then(function() {
+                                    // Autoplay started!
+                                }).catch(function(error) {
+                                    // Autoplay was prevented.
+                                    console.log(error)
+                                });
+                            }
                         }
                     } else {
                         alert("You are not a patron! If you are, did you link your account?");
@@ -238,24 +266,84 @@ export default class VideoPlayer extends React.Component {
                 if(playerTranscodeReady) {
                     player.src({
                         type: "application/x-mpegURL",
-                        src: "https://video-cdn.angelthump.com/hls/" + channel + ".m3u8"
+                        src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
                     })
+
+                    let promise = player.play();
+
+                    if (promise !== undefined) {
+                        promise.then(function() {
+                            // Autoplay started!
+                        }).catch(function(error) {
+                            // Autoplay was prevented.
+                            console.log(error)
+                        });
+                    }
                 } else {
                     player.src({
                         type: "application/x-mpegURL",
-                        src: "https://video-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
+                        src: `https://video-cdn.angelthump.com/hls/${channel}/index.m3u8`
                     })
+
+                    let promise = player.play();
+
+                    if (promise !== undefined) {
+                        promise.then(function() {
+                            // Autoplay started!
+                        }).catch(function(error) {
+                            // Autoplay was prevented.
+                            console.log(error)
+                        });
+                    }
                 }
             })
 
-            player.trigger('public');
+            /*
+            player.on('retry', () => {
+                if(!patreon) {
+                    if(playerTranscodeReady) {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: "https://video-cdn.angelthump.com/hls/" + channel + ".m3u8"
+                        })
+                    } else {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: "https://video-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
+                        })
+                    }
+                } else {
+                    if(playerTranscodeReady) {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
+                        })
+                    } else {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
+                        })
+                    }
+                }
+            })*/
+
+            player.on('retry', () => {
+                if(patreon) {
+                    player.trigger('patreon');
+                } else {
+                    player.trigger('public');
+                }
+            })
 
             if(patreon) {
                 player.trigger('patreon');
+            } else {
+                player.trigger('public');
             }
 
             let connect = () => {
                 player.poster(poster);
+
                 viewerSocket = io('https://viewer-api.angelthump.com:3031', {
                     transports: ['websocket']
                 });
@@ -267,7 +355,7 @@ export default class VideoPlayer extends React.Component {
             let retry = () => {
                 if(live) {
                     setTimeout(function() {
-                        player.trigger('public');
+                        player.trigger('retry');
 
                         if (requestTime < 16000) {
                             requestTime = requestTime * 2;

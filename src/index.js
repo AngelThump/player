@@ -13,9 +13,13 @@ const videoJsOptions = {
     html5: {
         hlsjsConfig: {
             debug: false,
+            enableWorker: true,
             startLevel: storage.getItem('lastSourceID') || 0,
-            liveSyncDurationCount: 2,
-            maxBufferSize: 10*1000*1000
+            //1 for near instant loading, 0 for lowest latency?
+            liveSyncDurationCount: 1,
+            liveMaxLatencyDurationCount: 6,
+            maxBufferSize: 10*1000*1000,
+            liveBackBufferLength: 0
         }
     },
     chromecast:{
@@ -42,7 +46,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.83'}
+    VideoStatsUL: {version: '1.0.89'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
