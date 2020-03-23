@@ -43,7 +43,7 @@ export default class VideoPlayer extends React.Component {
 
         let hlsTech;
         player.ready(function() {
-            hlsTech = player.tech({IWillNotUseThisInPlugins: true}.hls);
+            hlsTech = player.tech({IWillNotUseThisInPlugins: true}).hls;
         });
 
         canAutoplay.video().then(function(obj) {
@@ -99,14 +99,18 @@ export default class VideoPlayer extends React.Component {
                 playerTranscodeReady = transcode;
                 setTimeout(function() {
                     player.trigger('public');
-                }, 1000 * 30);
+                }, 1000 * 10);
             });
             viewerAPISocket.on('live', (liveBoolean) => {
                 console.log("socket sent live: " + liveBoolean);
                 live = liveBoolean;
-                setTimeout(function() {
-                    retry();
-                }, 3000);
+                if(live) {
+                    setTimeout(function() {
+                        retry();
+                    }, 3000);
+                } else {
+                    playerTranscodeReady = false;
+                }
             });
 
             player.bigPlayButton.hide();
@@ -353,15 +357,13 @@ export default class VideoPlayer extends React.Component {
             }
 
             let retry = () => {
-                if(live) {
-                    setTimeout(function() {
-                        player.trigger('retry');
+                setTimeout(function() {
+                    player.trigger('retry');
 
-                        if (requestTime < 16000) {
-                            requestTime = requestTime * 2;
-                        }
-                    }, requestTime);
-                }
+                    if (requestTime < 16000) {
+                        requestTime = requestTime * 2;
+                    }
+                }, requestTime);
             }
         }
     }
