@@ -23,7 +23,7 @@ export default class PasswordProtected extends React.Component {
 
     submit(event) {
         event.preventDefault();
-        fetch('https://api.angelthump.com/user/v2/password', {
+        fetch('https://api.angelthump.com/v2/user/stream_password', {
             method: 'post',
             body: JSON.stringify({
                 stream: this.props.channel,
