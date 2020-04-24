@@ -46,7 +46,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.0.891'}
+    VideoStatsUL: {version: '1.0.9'}
 }
 
 if (typeof window.MediaSource === 'undefined') {

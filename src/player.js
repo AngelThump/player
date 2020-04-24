@@ -99,7 +99,7 @@ export default class VideoPlayer extends React.Component {
                 playerTranscodeReady = transcode;
                 setTimeout(function() {
                     player.trigger('public');
-                }, 1000 * 10);
+                }, 5000);
             });
             viewerAPISocket.on('live', (liveBoolean) => {
                 console.log("socket sent live: " + liveBoolean);
@@ -173,47 +173,66 @@ export default class VideoPlayer extends React.Component {
                 app.reAuthenticate()
                 .then(async () => {
                     const {user} = await app.get('authentication');
-                    if (user.isPatron || user.partner) {
-                        //hide logo
-                        document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
-                        if(playerTranscodeReady) {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
-                            })
-
-                            let promise = player.play();
-
-                            if (promise !== undefined) {
-                                promise.then(function() {
-                                    // Autoplay started!
-                                }).catch(function(error) {
-                                    // Autoplay was prevented.
-                                    console.log(error)
-                                });
-                            }
-                        } else {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                            })
-
-                            let promise = player.play();
-
-                            if (promise !== undefined) {
-                                promise.then(function() {
-                                    // Autoplay started!
-                                }).catch(function(error) {
-                                    // Autoplay was prevented.
-                                    console.log(error)
-                                });
-                            }
-                        }
-                    } else {
+                    if(!user.patreon && user.angel) {
+                        alert("You do not have patreon linked to your account!");
                         alert("You are not a patron! If you are, did you link your account?");
                         document.getElementById('patreon-toggle').checked = false;
                         storage.setItem('patreon', false);
                         window.open('https://angelthump.com/dashboard/patreon', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                        return;
+                    }
+                  
+                    let isPatron, tier;
+                    if(!user.patreon) {
+                        isPatron = false;
+                        tier = 0;
+                    } else {
+                        isPatron = user.patreon.isPatron;
+                        tier = user.patreon.tier;
+                    }
+                  
+                    if(!user.angel && !isPatron && tier === 0) {
+                        alert("You are not a patron! If you are, did you verify your patreon?");
+                        document.getElementById('patreon-toggle').checked = false;
+                        storage.setItem('patreon', false);
+                        window.open('https://angelthump.com/settings/connection', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
+                        return;
+                    }
+
+                    //hide logo
+                    document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
+                    if(playerTranscodeReady) {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
+                        })
+
+                        let promise = player.play();
+
+                        if (promise !== undefined) {
+                            promise.then(function() {
+                                // Autoplay started!
+                            }).catch(function(error) {
+                                // Autoplay was prevented.
+                                console.log(error)
+                            });
+                        }
+                    } else {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
+                        })
+
+                        let promise = player.play();
+
+                        if (promise !== undefined) {
+                            promise.then(function() {
+                                // Autoplay started!
+                            }).catch(function(error) {
+                                // Autoplay was prevented.
+                                console.log(error)
+                            });
+                        }
                     }
                     auth.disconnect();
                 }).catch(function(error){
