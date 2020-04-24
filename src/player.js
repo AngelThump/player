@@ -77,7 +77,9 @@ export default class VideoPlayer extends React.Component {
 
         let { data, channel } = this.props;
         if(data) {
-            let { live, poster, thumbnail, playerTranscodeReady, title, viewers, isPatron } = data;
+            let { user, thumbnail_url, playerTranscodeReady } = data;
+            let live = data.type === 'live';
+            let offline_banner_url = user.offline_banner_url;
             let viewerSocket, viewerAPISocket, requestTime = 1000;
             let patreon = JSON.parse(storage.getItem('patreon')) || false;
 
@@ -115,10 +117,10 @@ export default class VideoPlayer extends React.Component {
 
             player.bigPlayButton.hide();
             if(!live) {
-                player.poster(poster);
+                player.poster(offline_banner_url);
             } else {
                 setTimeout(function() {
-                    player.poster(poster);
+                    player.poster(offline_banner_url);
                 }, 5000);
             }
 
@@ -365,7 +367,7 @@ export default class VideoPlayer extends React.Component {
             }
 
             let connect = () => {
-                player.poster(poster);
+                player.poster(offline_banner_url);
 
                 viewerSocket = io('https://viewer-api.angelthump.com:3031', {
                     transports: ['websocket']
