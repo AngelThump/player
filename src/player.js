@@ -77,7 +77,7 @@ export default class VideoPlayer extends React.Component {
 
         let { data, channel } = this.props;
         if(data) {
-            let { user, thumbnail_url, playerTranscodeReady } = data;
+            let { user, thumbnail_url, transcodeReady } = data;
             let live = data.type === 'live';
             let offline_banner_url = user.offline_banner_url;
             let viewerSocket, viewerAPISocket, requestTime = 1000;
@@ -98,7 +98,7 @@ export default class VideoPlayer extends React.Component {
 
             viewerAPISocket.on('transcode', (transcode) => {
                 console.log("socket sent transcode: " + transcode);
-                playerTranscodeReady = transcode;
+                transcodeReady = transcode;
                 setTimeout(function() {
                     player.trigger('public');
                 }, 5000);
@@ -111,7 +111,7 @@ export default class VideoPlayer extends React.Component {
                         retry();
                     }, 3000);
                 } else {
-                    playerTranscodeReady = false;
+                    transcodeReady = false;
                 }
             });
 
@@ -203,7 +203,7 @@ export default class VideoPlayer extends React.Component {
 
                     //hide logo
                     document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
-                    if(playerTranscodeReady) {
+                    if(transcodeReady) {
                         player.src({
                             type: "application/x-mpegURL",
                             src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
@@ -288,7 +288,7 @@ export default class VideoPlayer extends React.Component {
             })
             
             player.on('public', () => {
-                if(playerTranscodeReady) {
+                if(transcodeReady) {
                     player.src({
                         type: "application/x-mpegURL",
                         src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
@@ -326,7 +326,7 @@ export default class VideoPlayer extends React.Component {
             /*
             player.on('retry', () => {
                 if(!patreon) {
-                    if(playerTranscodeReady) {
+                    if(transcodeReady) {
                         player.src({
                             type: "application/x-mpegURL",
                             src: "https://video-cdn.angelthump.com/hls/" + channel + ".m3u8"
@@ -338,7 +338,7 @@ export default class VideoPlayer extends React.Component {
                         })
                     }
                 } else {
-                    if(playerTranscodeReady) {
+                    if(transcodeReady) {
                         player.src({
                             type: "application/x-mpegURL",
                             src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
