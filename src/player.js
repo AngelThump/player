@@ -80,40 +80,56 @@ export default class VideoPlayer extends React.Component {
             let { user, thumbnail_url, transcodeReady } = data;
             let live = data.type === 'live';
             let offline_banner_url = user.offline_banner_url;
-            let viewerSocket, viewerAPISocket, requestTime = 1000;
+            let viewCountSocket, requestTime = 1000;
             let patreon = JSON.parse(storage.getItem('patreon')) || false;
 
-            viewerAPISocket = io('https://viewer-api.angelthump.com', {
-                transports: ['websocket']
-            });
-            viewerAPISocket.on('connect', () => {
-                viewerAPISocket.emit('channel', channel);
-            });
-            viewerAPISocket.on('reload', () => {
-                window.location.reload();
-            });
-            viewerAPISocket.on('redirect', (url) => {
-                window.location = url;
-            });
+            let viewCountApiConnect = () => {
+                viewCountSocket = new WebSocket('wss://viewer-api.angelthump.com/uws/');
+                viewCountSocket.onopen = () => {
+                    viewCountSocket.send(JSON.stringify({action: 'subscribe', channel: channel}));
+                    if(!player.paused()) {
+                        viewCountSocket.send(JSON.stringify({action: 'join', channel: channel}));
+                    }
+                    setInterval(() => {
+                        viewCountSocket.send('{}');
+                    }, 10 * 1000)
+                };
 
-            viewerAPISocket.on('transcode', (transcode) => {
-                console.log("socket sent transcode: " + transcode);
-                transcodeReady = transcode;
-                setTimeout(function() {
-                    player.trigger('public');
-                }, 5000);
-            });
-            viewerAPISocket.on('live', (liveBoolean) => {
-                console.log("socket sent live: " + liveBoolean);
-                live = liveBoolean;
-                if(live) {
+                viewCountSocket.onmessage = (message) => {
+                    const jsonObject = JSON.parse(message.data);
+                    switch (jsonObject.action) {
+                        case 'reload': {
+                            window.location.reload();
+                        }
+                        case 'redirect': {
+                            window.location.search = `?channel=${jsonObject.punt_username}`;
+                        }
+                        case 'live': {
+                            console.log("socket sent live: " + jsonObject.live);
+                            live = jsonObject.live;
+                            if(live) {
+                                setTimeout(function() {
+                                    retry();
+                                }, 3000);
+                            }
+                        }
+                    }
+                };
+
+                viewCountSocket.onclose = function(e) {
+                    if(e.code === 1008) {
+                        return console.error(e.reason);
+                    }
+                    console.log('Trying to reconnect to view count ws.', e.reason);
                     setTimeout(function() {
-                        retry();
-                    }, 3000);
-                } else {
-                    transcodeReady = false;
-                }
-            });
+                        viewCountApiConnect();
+                    }, 5000);
+                };
+            }
+
+            if(!viewCountSocket) {
+                viewCountApiConnect();
+            }
 
             player.bigPlayButton.hide();
             if(!live) {
@@ -128,10 +144,9 @@ export default class VideoPlayer extends React.Component {
                 player.bigPlayButton.show();
                 document.getElementById('paused-overlay').style.visibility='visible';
 
-                if(viewerSocket) {
-                    if(viewerSocket.connected) {
-                        viewerSocket.disconnect();
-                    }
+                
+                if(viewCountSocket.readyState === 1) {
+                    viewCountSocket.send(JSON.stringify({action: 'leave', channel: channel}));
                 }
             })
 
@@ -141,19 +156,16 @@ export default class VideoPlayer extends React.Component {
                 player.loadingSpinner.show();
                 player.bigPlayButton.hide();
                 document.getElementById('paused-overlay').style.visibility='hidden';
+                player.poster(offline_banner_url);
 
-                if(!viewerSocket) {
-                    connect();
-                } else if (!viewerSocket.connected) {
-                    connect();
+                if(viewCountSocket.readyState === 1) {
+                    viewCountSocket.send(JSON.stringify({action: 'join', channel: channel}));
                 }
             })
 
             player.on('error', (e) => {
-                if(viewerSocket) {
-                    if(viewerSocket.connected) {
-                        viewerSocket.disconnect();
-                    }
+                if(viewCountSocket.readyState === 1) {
+                    viewCountSocket.send(JSON.stringify({action: 'leave', channel: channel}));
                 }
 
                 player.loadingSpinner.hide();
@@ -208,34 +220,13 @@ export default class VideoPlayer extends React.Component {
                             type: "application/x-mpegURL",
                             src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
                         })
-
-                        let promise = player.play();
-
-                        if (promise !== undefined) {
-                            promise.then(function() {
-                                // Autoplay started!
-                            }).catch(function(error) {
-                                // Autoplay was prevented.
-                                console.log(error)
-                            });
-                        }
                     } else {
                         player.src({
                             type: "application/x-mpegURL",
                             src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
                         })
-
-                        let promise = player.play();
-
-                        if (promise !== undefined) {
-                            promise.then(function() {
-                                // Autoplay started!
-                            }).catch(function(error) {
-                                // Autoplay was prevented.
-                                console.log(error)
-                            });
-                        }
                     }
+                    player.play();
                     auth.disconnect();
                 }).catch(function(error){
                     console.error('Error authenticating!', error);
@@ -293,64 +284,14 @@ export default class VideoPlayer extends React.Component {
                         type: "application/x-mpegURL",
                         src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
                     })
-
-                    let promise = player.play();
-
-                    if (promise !== undefined) {
-                        promise.then(function() {
-                            // Autoplay started!
-                        }).catch(function(error) {
-                            // Autoplay was prevented.
-                            console.log(error)
-                        });
-                    }
                 } else {
                     player.src({
                         type: "application/x-mpegURL",
                         src: `https://video-cdn.angelthump.com/hls/${channel}/index.m3u8`
                     })
-
-                    let promise = player.play();
-
-                    if (promise !== undefined) {
-                        promise.then(function() {
-                            // Autoplay started!
-                        }).catch(function(error) {
-                            // Autoplay was prevented.
-                            console.log(error)
-                        });
-                    }
                 }
+                player.play();
             })
-
-            /*
-            player.on('retry', () => {
-                if(!patreon) {
-                    if(transcodeReady) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: "https://video-cdn.angelthump.com/hls/" + channel + ".m3u8"
-                        })
-                    } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: "https://video-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
-                        })
-                    }
-                } else {
-                    if(transcodeReady) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + ".m3u8"
-                        })
-                    } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: "https://video-patreon-cdn.angelthump.com/hls/" + channel + "/index.m3u8"
-                        })
-                    }
-                }
-            })*/
 
             player.on('retry', () => {
                 if(patreon) {
@@ -364,17 +305,6 @@ export default class VideoPlayer extends React.Component {
                 player.trigger('patreon');
             } else {
                 player.trigger('public');
-            }
-
-            let connect = () => {
-                player.poster(offline_banner_url);
-
-                viewerSocket = io('https://viewer-api.angelthump.com:3031', {
-                    transports: ['websocket']
-                });
-                viewerSocket.on('connect', () => {
-                    viewerSocket.emit('channel', channel);
-                });
             }
 
             let retry = () => {
