@@ -2,12 +2,11 @@
 import QualitySubMenuItemDiv from './quality-submenu-item-div';
 import QualityButton from './quality-button';
 import videojs from 'video.js';
-import storage from '../storage';
 
 function qualityPickerPlugin() {
     let player = this;
 
-    let SUPPORTED_TRACKS = ["video", "audio", "subtitle"];
+    let SUPPORTED_TRACKS = ["video", "audio"];
 
     // On later versions `player.tech` is undefined before this...
     if (player.tech_) {
@@ -26,87 +25,53 @@ function qualityPickerPlugin() {
         const qualitySubMenuItemDiv = new QualitySubMenuItemDiv(player, {});
         subMenuSection.addChild(qualitySubMenuItemDiv);
 
-        for (let i=0; i < SUPPORTED_TRACKS.length; i++) {
-          let track = SUPPORTED_TRACKS[i];
+        for (let track of SUPPORTED_TRACKS) {
+          
+          if(!qualityData[track] || qualityData[track].length < 1) {
+            continue;
+          }
 
-          if (qualityData[track] && qualityData[track].length >= 1) {
-            let qualityList = qualityData[track];
+          if(qualityData[track].length === 1) {
+            qualityData[track][0].label = 'Source'
 
-            if(qualityList.length == 1) {
-              let quality = qualityList[i];
-              quality.label = 'Source';
-              let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: false });
+            const options = Object.assign({qualitySwitchCallback, track}, qualityData[track][0], { selectable: false });
 
-              let button = new QualityButton(player, options);
-              qualitySubMenuItemDiv.addChild(button);
-            } else {
-              //auto button
-              let quality = qualityList[0];
-              quality.label = 'Auto';
-              let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
-              let button = new QualityButton(player, options);
-              qualitySubMenuItemDiv.addChild(button);
+            const button = new QualityButton(player, options);
+            qualitySubMenuItemDiv.addChild(button);
+            break;
+          }
 
-              //hardcode source to be not transcode?
+          let quality = qualityData[track][0];
+          quality.label = 'Auto';
+          const options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
+          const button = new QualityButton(player, options);
+          qualitySubMenuItemDiv.addChild(button);
+          
+          for (let i = qualityData[track].length-1; i>0; i--) {
+            let quality = qualityData[track][i];
+          
+            if(qualityData[track].length-1 === i) {
+              quality.label = `${quality.label} (Source)`;
+            }
 
-              /*
-              for (let i=0; i < qualityList.length; i--) {
-                let quality = qualityList[i];
-                let label = quality.label;
-                if(i==0) {
-                  quality.label = quality.label + ' (Source)';
-                  if(qualityList.length == 1) {
-                    const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
-                    const item = inner.children()[0];
-                    item.children()[0].el_.children[3].innerHTML = quality.label;
-                    storage.setItem('lastSourceLabel', quality.label);
-                  }
+            let nextLabel = qualityData[track][i-1].label;
+            if(nextLabel) {
+              if(quality.label === '720p' && qualityData[track][i-1].label === '720p') {
+                //check if source
+                if(i===qualityData[track].length-1) {
+                  quality.label = '720p60 (Source)'
+                  qualityData[track][i-1].label = '720p30'
+                } else {
+                  quality.label = '720p60'
+                  qualityData[track][i-1].label = '720p30'
                 }
-                
-                if(label == '1250kbps') {
-                  quality.label = '480p';
-                }
-                let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
-
-                let button = new QualityButton(player, options);
-                qualitySubMenuItemDiv.addChild(button);
-              }*/
-
-              for (let i=qualityList.length-1; i > 0; i--) {
-                let quality = qualityList[i];
-                let label = quality.label;
-                if(i==qualityList.length-1) {
-                  quality.label = quality.label + ' (Source)';
-                  if(qualityList.length == 1) {
-                    const inner = player.controlBar.settingsMenuButton.children()[1].children()[0];
-                    const item = inner.children()[0];
-                    item.children()[0].el_.children[3].innerHTML = quality.label;
-                    storage.setItem('lastSourceLabel', quality.label);
-                  }
-                }
-                if(label == '1250kbps') {
-                  quality.label = '480p';
-                }
-
-                let nextLabel = qualityList[i-1].label;
-                if(nextLabel) {
-                  if(label == '720p' && qualityList[i-1].label == '720p') {
-                    //check if source
-                    if(i==qualityList.length-1) {
-                      quality.label = '720p60 (Source)'
-                      qualityList[i-1].label = '720p30'
-                    } else {
-                      quality.label = '720p60'
-                      qualityList[i-1].label = '720p30'
-                    }
-                  }
-                }
-                let options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
-
-                let button = new QualityButton(player, options);
-                qualitySubMenuItemDiv.addChild(button);
               }
             }
+
+            const options = Object.assign({qualitySwitchCallback, track}, quality, { selectable: true });
+
+            const button = new QualityButton(player, options);
+            qualitySubMenuItemDiv.addChild(button);
           }
         }
     }

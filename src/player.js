@@ -41,11 +41,6 @@ export default class VideoPlayer extends React.Component {
 
         const player = this.player;
 
-        let hlsTech;
-        player.ready(function() {
-            hlsTech = player.tech({IWillNotUseThisInPlugins: true}).hls;
-        });
-
         canAutoplay.video().then(function(obj) {
             if (obj.result === false) {
                 player.muted(true);
@@ -87,7 +82,7 @@ export default class VideoPlayer extends React.Component {
                 viewCountSocket = new WebSocket('wss://viewer-api.angelthump.com/uws/');
                 viewCountSocket.onopen = () => {
                     viewCountSocket.send(JSON.stringify({action: 'subscribe', channel: channel}));
-                    if(!player.paused()) {
+                    if(!player.paused() && live) {
                         viewCountSocket.send(JSON.stringify({action: 'join', channel: channel}));
                     }
                     setInterval(() => {
@@ -151,8 +146,9 @@ export default class VideoPlayer extends React.Component {
             })
 
             player.on("playing", () => {
-                //console.log(hlsTech.hls);
-                //console.log(hlsTech.hls.liveSyncPosition);
+                const hlsTech = player.tech({IWillNotUseThisInPlugins: true}).hls;
+                //console.log(hlsTech);
+                //console.log(hlsTech.liveSyncPosition);
                 player.loadingSpinner.show();
                 player.bigPlayButton.hide();
                 document.getElementById('paused-overlay').style.visibility='hidden';
