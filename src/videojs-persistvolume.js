@@ -1,6 +1,6 @@
 "use strict";
 
-import storage from './storage';
+import { localStorageGetItem, localStorageSetItem } from './storage';
 
 (function(factory) {
   /*!
@@ -44,17 +44,17 @@ import storage from './storage';
     var key = settings.namespace + '-' + 'volume';
     var muteKey = settings.namespace + '-' + 'mute';
     player.on("volumechange", function() {
-      storage.setItem(key, player.volume());
-      storage.setItem(muteKey, player.muted());
+      localStorageSetItem(key, player.volume());
+      localStorageSetItem(muteKey, player.muted());
     });
 
     player.ready(function() {
-      var persistedMute = storage.getItem(muteKey);
+      var persistedMute = localStorageGetItem(muteKey);
       if(persistedMute !== null) {
         player.muted('true' === persistedMute);
       }
 
-      var persistedVolume = storage.getItem(key);
+      var persistedVolume = localStorageGetItem(key);
       if(persistedVolume !== null) {
         player.volume(persistedVolume);
         player.trigger('volumechange');

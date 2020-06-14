@@ -21,7 +21,7 @@ require('./videojs-persistvolume');
 import io from 'socket.io-client';
 import feathers from '@feathersjs/client';
 import 'videojs-hotkeys';
-import storage from './storage';
+import { localStorageGetItem, localStorageSetItem } from './storage';
 
 /*TODO: When offline, change back to offline background img? Or use a div overlay for offline image when offline.
  *      Figure out video stats via hls.js. bitrate,buffersize,etc
@@ -76,7 +76,7 @@ export default class VideoPlayer extends React.Component {
             let live = data.type === 'live';
             let offline_banner_url = user.offline_banner_url;
             let viewCountSocket, requestTime = 1000;
-            let patreon = JSON.parse(storage.getItem('patreon')) || false;
+            let patreon = JSON.parse(localStorageGetItem('patreon')) || false;
 
             let viewCountApiConnect = () => {
                 viewCountSocket = new WebSocket('wss://viewer-api.angelthump.com/uws/');
@@ -187,7 +187,7 @@ export default class VideoPlayer extends React.Component {
                         alert("You do not have patreon linked to your account!");
                         alert("You are not a patron! If you are, did you link your account?");
                         document.getElementById('patreon-toggle').checked = false;
-                        storage.setItem('patreon', false);
+                        localStorageSetItem('patreon', false);
                         window.open('https://angelthump.com/dashboard/patreon', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
                         return;
                     }
@@ -204,7 +204,7 @@ export default class VideoPlayer extends React.Component {
                     if(!user.angel && !isPatron && tier === 0) {
                         alert("You are not a patron! If you are, did you verify your patreon?");
                         document.getElementById('patreon-toggle').checked = false;
-                        storage.setItem('patreon', false);
+                        localStorageSetItem('patreon', false);
                         window.open('https://angelthump.com/settings/connection', 'AngelThump x Patreon','height=640,width=960,menubar=no,scrollbars=no,location=no,status=no');
                         return;
                     }
@@ -257,7 +257,7 @@ export default class VideoPlayer extends React.Component {
                             loginModal.close();
                             player.trigger('patreon');
                             document.getElementById('patreon-toggle').checked = true;
-                            storage.setItem('patreon', true);
+                            localStorageSetItem('patreon', true);
                         }).catch(function(error) {
                             document.getElementById("error").style.display = 'block';
                             console.error('Error authenticating!', error);
@@ -270,7 +270,7 @@ export default class VideoPlayer extends React.Component {
                     });
 
                     document.getElementById('patreon-toggle').checked = false;
-                    storage.setItem('patreon', false);
+                    localStorageSetItem('patreon', false);
                 });
             })
             

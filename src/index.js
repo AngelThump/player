@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import storage from './storage';
+import { localStorageGetItem } from './storage';
 
 let search = window.location.search;
 let params = new URLSearchParams(search);
@@ -14,9 +14,9 @@ const videoJsOptions = {
         hlsjsConfig: {
             debug: false,
             enableWorker: true,
-            startLevel: storage.getItem('lastSourceID') || 0,
+            startLevel: localStorageGetItem('lastSourceID') || 0,
             //1 for near instant loading, 0 for lowest latency?
-            liveSyncDurationCount: 1,
+            liveSyncDurationCount: 2,
             liveMaxLatencyDurationCount: 6,
             maxBufferSize: 10*1000*1000,
             liveBackBufferLength: 0
@@ -46,7 +46,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.1.03'}
+    VideoStatsUL: {version: '1.1.1'}
 }
 
 if (typeof window.MediaSource === 'undefined') {

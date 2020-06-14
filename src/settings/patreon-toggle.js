@@ -1,5 +1,5 @@
 import videojs from 'video.js';
-import storage from '../storage';
+import { localStorageGetItem, localStorageSetItem } from '../storage';
 
 const ClickableComponent = videojs.getComponent('ClickableComponent');
 
@@ -19,7 +19,7 @@ class Patreon extends ClickableComponent {
   }
 
   createEl() {
-    let el = super.createEl('input', {className: 'qa-input-checkbox', defaultChecked: JSON.parse(storage.getItem('patreon')) || false}, {type:'checkbox', id: 'patreon-toggle'});
+    let el = super.createEl('input', {className: 'qa-input-checkbox', defaultChecked: JSON.parse(localStorageGetItem('patreon')) || false}, {type:'checkbox', id: 'patreon-toggle'});
     return el;
   }
 
@@ -38,10 +38,10 @@ class Patreon extends ClickableComponent {
     const target = event.target;
 
     if(target.checked) {
-      storage.setItem('patreon', true);
+      localStorageSetItem('patreon', true);
       this.player().trigger('patreon');
     } else {
-      storage.setItem('patreon', false);
+      localStorageSetItem('patreon', false);
       this.player().trigger('public');
     }
   }

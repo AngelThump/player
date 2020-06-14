@@ -1,7 +1,7 @@
 import videojs from 'video.js';
 const Button = videojs.getComponent('Button');
 const dom = videojs.dom || videojs;
-import storage from '../storage';
+import { localStorageGetItem } from '../storage';
 
 /**
  * The specific menu item type for selecting a setting
@@ -52,7 +52,7 @@ class QualityMenuButton extends Button {
   //get source from local storage, otherwise default to auto.
   update() {
     let el = this.el();
-    let label = storage.getItem('lastSourceLabel') || 'Auto';
+    let label = localStorageGetItem('lastSourceLabel') || 'Auto';
     el.children[3].innerHTML = label;
   }
 }

@@ -1,7 +1,7 @@
 import videojs from 'video.js';
 const Button = videojs.getComponent('Button');
 const dom = videojs.dom || videojs;
-import storage from '../storage';
+import { localStorageSetItem } from '../storage';
 
 /**
  * The specific menu item type for selecting a setting
@@ -49,9 +49,9 @@ class QualityButton extends Button {
 
     this.options_.qualitySwitchCallback(this.options_.id, this.options_.trackType);
 
-    storage.setItem('lastSourceLabel', this.options_.label);
+    localStorageSetItem('lastSourceLabel', this.options_.label);
     if(this.options_.id >= 0) {
-      storage.setItem('lastSourceID', this.options_.id);
+      localStorageSetItem('lastSourceID', this.options_.id);
     }
 
     item.children()[0].el_.children[3].innerHTML = this.options_.label;

@@ -1,27 +1,26 @@
-class TempStorage {
-  constructor() {
-    this.data = {};
-  }
+let localStorage;
 
-  clear() {
-    this.data = {};
-  }
+try {
+  localStorage = window.localStorage;
+} catch(e) {
+}
 
-  getItem(key) {
-    return this.data[key];
-  }
-
-  key(n) {
-    return Object.keys(this.data)[n];
-  }
-
-  removeItem(key) {
-    this.data[key] = null;
-  }
-
-  setItem(key, value) {
-    this.data[key] = value;
+export function localStorageGetItem(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch (e) {
+    return null;
   }
 }
 
-export default window.localStorage || new TempStorage();
+export function localStorageRemoveItem(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {}
+}
+
+export function localStorageSetItem(key, value) {
+  try {
+    return localStorage.setItem(key, value);
+  } catch (e) {}
+}
