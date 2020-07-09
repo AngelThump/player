@@ -16,7 +16,7 @@ const videoJsOptions = {
             enableWorker: true,
             startLevel: localStorageGetItem('lastSourceID') || 0,
             //1 for near instant loading, 0 for lowest latency?
-            liveSyncDurationCount: 2,
+            liveSyncDurationCount: 1,
             liveMaxLatencyDurationCount: 6,
             maxBufferSize: 10*1000*1000,
             liveBackBufferLength: 0
@@ -46,7 +46,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.1.3'}
+    VideoStatsUL: {version: '1.1.4'}
 }
 
 if (typeof window.MediaSource === 'undefined') {

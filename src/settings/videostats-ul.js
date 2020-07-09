@@ -36,30 +36,29 @@ class VideoStatsUL extends Component {
     const version = this.options_.version;
     let videoResolution = this.plStat("Video Resolution:", player.videoWidth() + "x" + player.videoHeight());
     let displayResolution = this.plStat("Display Resolution:", player.currentWidth() + "x" + player.currentHeight());
-    let skippedFrames = this.plStat("Skipped Frames:", "0");
-    let bufferSize = this.plStat("Buffer Size:", "0.00sec.");
+    let droppedFrames = this.plStat("Dropped Frames:", "0");
+    let bufferSize = this.plStat("Buffer Size:", "0.00sec");
+    let delay = this.plStat("Latency to Broadcaster", "0.00sec");
     let playbackRate = this.plStat("Playback Rate:", "0 Kbps");
-    let versionStat = this.plStat("Version:", version);
+    let versionStat = this.plStat("Player Version:", version);
 
     statEL.insertBefore(videoResolution, statEL.contentEl_);
     statEL.insertBefore(displayResolution, statEL.contentEl_);
-    statEL.insertBefore(skippedFrames, statEL.contentEl_);
+    statEL.insertBefore(droppedFrames, statEL.contentEl_);
     statEL.insertBefore(bufferSize, statEL.contentEl_);
+    statEL.insertBefore(delay, statEL.contentEl_);
     statEL.insertBefore(playbackRate, statEL.contentEl_);
     statEL.insertBefore(versionStat, statEL.contentEl_);
 
     setInterval(() => {
       this.updateStats();
-    }, 1000);
+    }, 1000)
   }
 
   updateStats() {
     const player = this.player();
     let hls = player.tech({ IWillNotUseThisInPlugins: true }).hls;
-    let stats;
-    if(hls) {
-      stats = hls.stats;
-    }
+    const htmlMediaElement = player.tech({ IWillNotUseThisInPlugins: true }).el();
 
     let statEL = this.el();
     for(let i = 1; i<statEL.children.length; i++) {
@@ -71,12 +70,15 @@ class VideoStatsUL extends Component {
         span.innerHTML = player.videoWidth() + "x" + player.videoHeight();
       } else if(i == 2) {
         span.innerHTML = player.currentWidth() + "x" + player.currentHeight();
-      } else if(i == 3 && stats) {
-        span.innerHTML = stats.videoPlaybackQuality.droppedVideoFrames;
-      } else if(i == 4 && stats) {
-        span.innerHTML = (stats.buffered[0].end - stats.buffered[0].start).toFixed(2) + " sec";
-      } else if (i== 5 && stats) {
-        span.innerHTML = Math.round(stats.bandwidth/8000) + " Kbps";
+      } else if(i == 3) {
+        const videoPlaybackQuality = player.getVideoPlaybackQuality();
+        span.innerHTML = `${videoPlaybackQuality.droppedVideoFrames}/${videoPlaybackQuality.totalVideoFrames}`;
+      } else if(i == 4 && hls) {
+        span.innerHTML = `${Math.round(((htmlMediaElement.buffered.end(0) - htmlMediaElement.buffered.start(0)) + Number.EPSILON) * 100) / 100} sec`;
+      } else if (i == 5 && hls) {
+        span.innerHTML = `${Math.round(((htmlMediaElement.duration - hls.liveSyncPosition) + Number.EPSILON) * 100) / 100} sec`;
+      } else if (i== 6) {
+        span.innerHTML = `0 Kbps`;
       }
     }
   }
