@@ -59,6 +59,7 @@ class VideoStatsUL extends Component {
     const player = this.player();
     let hls = player.tech({ IWillNotUseThisInPlugins: true }).hls;
     const htmlMediaElement = player.tech({ IWillNotUseThisInPlugins: true }).el();
+    const videoPlaybackQuality = player.getVideoPlaybackQuality();
 
     let statEL = this.el();
     for(let i = 1; i<statEL.children.length; i++) {
@@ -67,11 +68,10 @@ class VideoStatsUL extends Component {
       let span = value.children[0];
       
       if(i == 1) {
-        span.innerHTML = player.videoWidth() + "x" + player.videoHeight();
+        span.innerHTML = `${player.videoWidth()}x${player.videoHeight()}`;
       } else if(i == 2) {
-        span.innerHTML = player.currentWidth() + "x" + player.currentHeight();
-      } else if(i == 3) {
-        const videoPlaybackQuality = player.getVideoPlaybackQuality();
+        span.innerHTML = `${player.currentWidth()}x${player.currentHeight()}`;
+      } else if(i == 3 && videoPlaybackQuality) {
         span.innerHTML = `${videoPlaybackQuality.droppedVideoFrames}/${videoPlaybackQuality.totalVideoFrames}`;
       } else if(i == 4 && hls) {
         span.innerHTML = `${Math.round(((htmlMediaElement.buffered.end(0) - htmlMediaElement.buffered.start(0)) + Number.EPSILON) * 100) / 100} sec`;
