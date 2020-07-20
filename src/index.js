@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { localStorageGetItem } from './storage';
+import "regenerator-runtime/runtime.js";
 
 let search = window.location.search;
 let params = new URLSearchParams(search);
@@ -46,7 +47,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.1.4'}
+    VideoStatsUL: {version: '1.1.7'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -63,20 +64,30 @@ if(channel) {
     channel = channel;
     fetch(API + channel)
     .then(response => response.json())
-    .then(response => {
+    .then(async response => {
+        let server;
+        /*await fetch("https://api.angelthump.com/v2/server")
+        .then(response => response.json())
+        .then(response => {
+            server = response.server
+        })
+        .catch(() => {
+            console.error('failed to get m3u8 server');
+        });*/
+
         const userData = response.user;
         if(!userData.password_protect) {
             import('./player').then(VideoPlayer => {
                 ReactDOM.render(
                 <div className="player">
-                    <VideoPlayer.default options={videoJsOptions} channel={channel} data={response}/>
+                    <VideoPlayer.default options={videoJsOptions} channel={channel} data={response} server={server}/>
                 </div>, document.getElementById('root'));
             })
         } else {
             import('./password-protected').then(PasswordProtected => {
                 ReactDOM.render(
                 <div className="player">
-                    <PasswordProtected.default options={videoJsOptions} channel={channel} data={response}/>
+                    <PasswordProtected.default options={videoJsOptions} channel={channel} data={response} server={server}/>
                 </div>, document.getElementById('root'));
             })
         }

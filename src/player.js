@@ -4,7 +4,6 @@ require('!style-loader!css-loader!./css/player.css')
 require('!style-loader!css-loader!./css/videojs-logobrand.css')
 require('!style-loader!css-loader!./css/videojs-chromecast.css')
 require('!style-loader!css-loader!./css/login.css')
-import "babel-polyfill";
 import logo from '../dist/assets/patreon.png';
 import videojs from 'video.js';
 window.videojs = videojs;
@@ -70,7 +69,7 @@ export default class VideoPlayer extends React.Component {
             enableHoverScroll: true
         });
 
-        let { data, channel } = this.props;
+        let { data, channel, server } = this.props;
         if(data) {
             let { user, thumbnail_url, transcodeReady } = data;
             let live = data.type === 'live';
@@ -212,15 +211,29 @@ export default class VideoPlayer extends React.Component {
                     //hide logo
                     document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
                     if(transcodeReady) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
-                        })
+                        if(server) {
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: `https://${server}-patreon.angelthump.com/hls/${channel}.m3u8`
+                            })
+                        } else {
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
+                            })
+                        }
                     } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                        })
+                        if(server) {
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: `https://${server}-patreon.angelthump.com/hls/${channel}/index.m3u8`
+                            })
+                        } else {
+                            player.src({
+                                type: "application/x-mpegURL",
+                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
+                            })
+                        }
                     }
                     player.play();
                     auth.disconnect();
@@ -276,15 +289,29 @@ export default class VideoPlayer extends React.Component {
             
             player.on('public', () => {
                 if(transcodeReady) {
-                    player.src({
-                        type: "application/x-mpegURL",
-                        src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
-                    })
+                    if(server) {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://${server}-haproxy.angelthump.com/hls/${channel}.m3u8`
+                        })
+                    } else {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
+                        })
+                    }
                 } else {
-                    player.src({
-                        type: "application/x-mpegURL",
-                        src: `https://video-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                    })
+                    if(server) {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://${server}-haproxy.angelthump.com/hls/${channel}/index.m3u8`
+                        })
+                    } else {
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-cdn.angelthump.com/hls/${channel}/index.m3u8`
+                        })
+                    }
                 }
                 player.play();
             })
