@@ -22,10 +22,9 @@ import feathers from '@feathersjs/client';
 import 'videojs-hotkeys';
 import { localStorageGetItem, localStorageSetItem } from './storage';
 
-/*TODO: When offline, change back to offline background img? Or use a div overlay for offline image when offline.
- *      Figure out video stats via hls.js. bitrate,buffersize,etc
- *      Server list
- *      Display load of region/server the user is assigned to next to server selection
+/*TODO: 
+    When offline, change back to offline background img? Or use a div overlay for offline image when offline.
+    show first frame as poster if live. if not live, show user's poster
  */
 
 export default class VideoPlayer extends React.Component {
@@ -158,15 +157,29 @@ export default class VideoPlayer extends React.Component {
                 }
             })
 
-            player.on('error', (e) => {
+            player.on('error', () => {
+                const error = player.error();
                 if(viewCountSocket.readyState === 1) {
                     viewCountSocket.send(JSON.stringify({action: 'leave', channel: channel}));
                 }
 
                 player.loadingSpinner.hide();
-                if(e.code != 3) {
+                if(error.code != 3) {
                     player.error(null);
                     if(live) {
+                        console.log('might be trying to change server');
+                        fetch(`https://vigor.angelthump.com/${channel}/edge`)
+                        .then(response => response.json())
+                        .then(response => {
+                            if(server !== response.server) {
+                                server = response.server;
+                                return player.trigger('public');
+                            }
+                        })
+                        .catch(() => {
+                            console.error('failed to get m3u8 server');
+                        });
+                        
                         retry();
                     }
                 }
@@ -211,29 +224,15 @@ export default class VideoPlayer extends React.Component {
                     //hide logo
                     document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
                     if(transcodeReady) {
-                        if(server) {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://${server}-patreon.angelthump.com/hls/${channel}.m3u8`
-                            })
-                        } else {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
-                            })
-                        }
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
+                        })
                     } else {
-                        if(server) {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://${server}-patreon.angelthump.com/hls/${channel}/index.m3u8`
-                            })
-                        } else {
-                            player.src({
-                                type: "application/x-mpegURL",
-                                src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                            })
-                        }
+                        player.src({
+                            type: "application/x-mpegURL",
+                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
+                        })
                     }
                     player.play();
                     auth.disconnect();
@@ -292,7 +291,7 @@ export default class VideoPlayer extends React.Component {
                     if(server) {
                         player.src({
                             type: "application/x-mpegURL",
-                            src: `https://${server}-haproxy.angelthump.com/hls/${channel}.m3u8`
+                            src: `https://${server}.angelthump.com/hls/${channel}.m3u8`
                         })
                     } else {
                         player.src({
@@ -304,7 +303,7 @@ export default class VideoPlayer extends React.Component {
                     if(server) {
                         player.src({
                             type: "application/x-mpegURL",
-                            src: `https://${server}-haproxy.angelthump.com/hls/${channel}/index.m3u8`
+                            src: `https://${server}.angelthump.com/hls/${channel}/index.m3u8`
                         })
                     } else {
                         player.src({

@@ -17,7 +17,7 @@ const videoJsOptions = {
             enableWorker: true,
             startLevel: localStorageGetItem('lastSourceID') || 0,
             //1 for near instant loading, 0 for lowest latency?
-            liveSyncDurationCount: 1,
+            liveSyncDurationCount: 2,
             liveMaxLatencyDurationCount: 6,
             maxBufferSize: 10*1000*1000,
             liveBackBufferLength: 0
@@ -47,7 +47,7 @@ const videoJsOptions = {
     },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.1.7'}
+    VideoStatsUL: {version: '1.1.8'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -66,14 +66,14 @@ if(channel) {
     .then(response => response.json())
     .then(async response => {
         let server;
-        /*await fetch("https://api.angelthump.com/v2/server")
+        await fetch(`https://vigor.angelthump.com/${channel}/edge`)
         .then(response => response.json())
         .then(response => {
             server = response.server
         })
         .catch(() => {
             console.error('failed to get m3u8 server');
-        });*/
+        });
 
         const userData = response.user;
         if(!userData.password_protect) {

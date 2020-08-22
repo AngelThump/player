@@ -1,6 +1,7 @@
 import videojs from 'video.js';
 const Component = videojs.getComponent('Component');
 const dom = videojs.dom || videojs;
+import Hls from 'hls.js';
 
 class VideoStatsUL extends Component {
 
@@ -41,6 +42,7 @@ class VideoStatsUL extends Component {
     let delay = this.plStat("Latency to Broadcaster", "0.00sec");
     let playbackRate = this.plStat("Playback Rate:", "0 Kbps");
     let versionStat = this.plStat("Player Version:", version);
+    let hlsVersionStat = this.plStat("hls.js Version:", Hls.version);
 
     statEL.insertBefore(videoResolution, statEL.contentEl_);
     statEL.insertBefore(displayResolution, statEL.contentEl_);
@@ -48,6 +50,7 @@ class VideoStatsUL extends Component {
     statEL.insertBefore(bufferSize, statEL.contentEl_);
     statEL.insertBefore(delay, statEL.contentEl_);
     statEL.insertBefore(playbackRate, statEL.contentEl_);
+    statEL.insertBefore(hlsVersionStat, statEL.contentEl_);
     statEL.insertBefore(versionStat, statEL.contentEl_);
 
     setInterval(() => {
