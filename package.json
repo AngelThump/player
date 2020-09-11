@@ -20,7 +20,8 @@
     "video.js": "^7.9.1",
     "videojs-chromecast": "^2.0.8",
     "videojs-hlsjs-plugin": "git+https://github.com/TimIsOverpowered/videojs-hlsjs-plugin.git",
-    "videojs-hotkeys": "^0.2.27"
+    "videojs-hotkeys": "^0.2.27",
+    "videojs-landscape-fullscreen": "^11.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",

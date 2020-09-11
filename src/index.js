@@ -45,9 +45,14 @@ const videoJsOptions = {
         'fullscreenToggle':{}
         }
     },
+    fullscreen: {
+        enterOnRotate: true,
+        alwaysInLandscapeMode: true,
+        iOS: true
+    },
     fill: true,
     responsive: true,
-    VideoStatsUL: {version: '1.1.8'}
+    VideoStatsUL: {version: '1.1.93'}
 }
 
 if (typeof window.MediaSource === 'undefined') {
@@ -66,6 +71,7 @@ if(channel) {
     .then(response => response.json())
     .then(async response => {
         let server;
+        /*
         await fetch(`https://vigor.angelthump.com/${channel}/edge`)
         .then(response => response.json())
         .then(response => {
@@ -73,7 +79,7 @@ if(channel) {
         })
         .catch(() => {
             console.error('failed to get m3u8 server');
-        });
+        });*/
 
         const userData = response.user;
         if(!userData.password_protect) {

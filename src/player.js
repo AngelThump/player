@@ -21,6 +21,7 @@ import io from 'socket.io-client';
 import feathers from '@feathersjs/client';
 import 'videojs-hotkeys';
 import { localStorageGetItem, localStorageSetItem } from './storage';
+import 'videojs-landscape-fullscreen';
 
 /*TODO: 
     When offline, change back to offline background img? Or use a div overlay for offline image when offline.
@@ -38,6 +39,8 @@ export default class VideoPlayer extends React.Component {
         });
 
         const player = this.player;
+
+        player.landscapeFullscreen(this.props.options.fullscreen);
 
         canAutoplay.video().then(function(obj) {
             if (obj.result === false) {
@@ -90,22 +93,25 @@ export default class VideoPlayer extends React.Component {
 
                 viewCountSocket.onmessage = (message) => {
                     const jsonObject = JSON.parse(message.data);
-                    switch (jsonObject.action) {
-                        case 'reload': {
-                            window.location.reload();
+                    const action = jsonObject.action;
+                    if(action === 'reload') {
+                        window.location.reload();
+                    } else if (action === 'redirect') {
+                        window.location.search = `?channel=${jsonObject.punt_username}`;
+                    } else if (action === 'live') {
+                        console.log('socket sent live: ' + jsonObject.live);
+                        live = jsonObject.live;
+                        if(live) {
+                            setTimeout(function() {
+                                retry();
+                            }, 3000);
                         }
-                        case 'redirect': {
-                            window.location.search = `?channel=${jsonObject.punt_username}`;
-                        }
-                        case 'live': {
-                            console.log("socket sent live: " + jsonObject.live);
-                            live = jsonObject.live;
-                            if(live) {
-                                setTimeout(function() {
-                                    retry();
-                                }, 3000);
-                            }
-                        }
+                    } else if (action === 'edge_down') {
+                        console.log(`edge down: ${jsonObject.edge}`);
+                        /*
+                        if(server === jsonObject.edge && live) {
+                            updateEdge();
+                        }*/
                     }
                 };
 
@@ -119,6 +125,22 @@ export default class VideoPlayer extends React.Component {
                     }, 5000);
                 };
             }
+            
+            const updateEdge = async () => {
+                console.log('might be trying to change server');
+                await fetch(`https://vigor.angelthump.com/${channel}/edge`)
+                .then(response => response.json())
+                .then(response => {
+                    if(server !== response.server) {
+                        server = response.server;
+                        return player.trigger('public');
+                    }
+                })
+                .catch(() => {
+                    console.error('failed to get m3u8 server');
+                });
+            }
+
 
             if(!viewCountSocket) {
                 viewCountApiConnect();
@@ -167,18 +189,7 @@ export default class VideoPlayer extends React.Component {
                 if(error.code != 3) {
                     player.error(null);
                     if(live) {
-                        console.log('might be trying to change server');
-                        fetch(`https://vigor.angelthump.com/${channel}/edge`)
-                        .then(response => response.json())
-                        .then(response => {
-                            if(server !== response.server) {
-                                server = response.server;
-                                return player.trigger('public');
-                            }
-                        })
-                        .catch(() => {
-                            console.error('failed to get m3u8 server');
-                        });
+                        //updateEdge();
                         
                         retry();
                     }
@@ -223,17 +234,10 @@ export default class VideoPlayer extends React.Component {
 
                     //hide logo
                     document.getElementById('vjs-logobrand-image').style.visibility = 'hidden';
-                    if(transcodeReady) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}.m3u8`
-                        })
-                    } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-patreon-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                        })
-                    }
+                    player.src({
+                        type: "application/x-mpegURL",
+                        src: `https://vigor.angelthump.com/hls/${channel}.m3u8?patreon=true`
+                    })
                     player.play();
                     auth.disconnect();
                 }).catch(function(error){
@@ -287,31 +291,10 @@ export default class VideoPlayer extends React.Component {
             })
             
             player.on('public', () => {
-                if(transcodeReady) {
-                    if(server) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://${server}.angelthump.com/hls/${channel}.m3u8`
-                        })
-                    } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-cdn.angelthump.com/hls/${channel}.m3u8`
-                        })
-                    }
-                } else {
-                    if(server) {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://${server}.angelthump.com/hls/${channel}/index.m3u8`
-                        })
-                    } else {
-                        player.src({
-                            type: "application/x-mpegURL",
-                            src: `https://video-cdn.angelthump.com/hls/${channel}/index.m3u8`
-                        })
-                    }
-                }
+                player.src({
+                    type: "application/x-mpegURL",
+                    src: `https://vigor.angelthump.com/hls/${channel}.m3u8`
+                })
                 player.play();
             })
 
