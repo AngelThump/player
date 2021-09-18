@@ -61,29 +61,11 @@ export default function PasswordProtect(props) {
         spacing={4}
       >
         <img src={logo} alt="" />
-        {error === true ? (
-          <Alert severity="error">Wrong Password!</Alert>
-        ) : (
-          <></>
-        )}
+        {error === true ? <Alert severity="error">Wrong Password!</Alert> : <></>}
         <form>
           <Stack spacing={2}>
-            <Input
-              autoFocus={true}
-              autoCapitalize="false"
-              autoComplete="false"
-              autoCorrect="false"
-              type="password"
-              onChange={handlePasswordInput}
-              placeholder="Enter Stream Password"
-            />
-            <Button
-              type="submit"
-              onClick={checkPass}
-              variant="contained"
-              disabled={password.length === 0}
-              color={error ? "error" : "primary"}
-            >
+            <Input autoFocus={true} autoCapitalize="false" autoComplete="false" autoCorrect="false" type="password" onChange={handlePasswordInput} placeholder="Enter Stream Password" />
+            <Button type="submit" onClick={checkPass} variant="contained" disabled={password.length === 0} color={error ? "error" : "primary"}>
               Submit
             </Button>
           </Stack>

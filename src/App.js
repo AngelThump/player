@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { createTheme, ThemeProvider, responsiveFontSizes } from "@mui/material/styles";
 import { CssBaseline, styled } from "@mui/material";
-import { blue, grey } from "@mui/material/colors";
 import Player from "./Player";
 import PasswordProtect from "./PasswordProtect";
 
@@ -13,33 +12,16 @@ const API_BASE = "https://api.angelthump.com/v2";
 export default function App() {
   const [data, setData] = useState(undefined);
 
-  const darkTheme = createTheme({
+  let darkTheme = createTheme({
     palette: {
+      mode: "dark",
       background: {
         default: "#0e0e10",
-        secondary: "#1d1d1d",
-      },
-      text: {
-        primary: "#efeff1",
-        secondary: "rgba(255,255,255,0.7)",
-      },
-      button: {
-        primary: blue[500],
-        secondary: grey[500],
-      },
-      input: {
-        borderColor: "rgba(255, 255, 255, 0.2)",
-        color: "#efeff1",
-        backgroundColor: "rgba(255, 255, 255, 0.2)",
-        borderColorPrimary: blue[500],
-        backgroundColorPrimary: "#000000",
-        borderColorSecondary: "rgba(255, 255, 255, 0.3)",
-      },
-      border: {
-        color: "rgba(255, 255, 255, 0.2)",
       },
     },
   });
+
+  darkTheme = responsiveFontSizes(darkTheme);
 
   useEffect(() => {
     function fetchApi() {

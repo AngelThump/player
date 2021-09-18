@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Stack, Box, Typography } from "@mui/material";
+import { styled, Grid, Box, Typography } from "@mui/material";
 import { useEffect, useRef, forwardRef, useState } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
@@ -162,11 +162,19 @@ export default function Player(props) {
           </Grid>
         </>
       ) : (
-        <Box display="flex" alignItems="center" position="absolute" inset="0px" height="100%" width="100%" justifyContent="center">
-          <Stack sx={{ maxWidth: "50%", width: "50%", alignItems: "center", position: "relative" }} spacing={1}>
-            <img width="15%" src={biblethump} alt="" />
-            <Typography sx={{fontWeight: 600}} variant="h5" component="div">Hm? Missing arguments.</Typography>
-          </Stack>
+        <Box sx={{ flexGrow: 1 }}>
+          <Grid container justifyContent="center" alignItems="center" direction="column" style={{ minHeight: "100vh" }}>
+            <Grid item xs={12}>
+              <Box sx={{ height: "100px", width: "100px" }}>
+                <Image src={biblethump} />
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography sx={{ fontWeight: 600 }} variant="h6">
+                Hm? Missing arguments.
+              </Typography>
+            </Grid>
+          </Grid>
         </Box>
       )}
     </VideoContainer>
@@ -195,4 +203,11 @@ const OfflineBanner = styled((props) => <div {...props} />)`
   justify-content: center;
   width: 100%;
   position: relative;
+`;
+
+const Image = styled((props) => <img {...props} alt="" />)`
+  margin: auto;
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
 `;
