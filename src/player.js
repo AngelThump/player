@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled } from "@mui/material";
+import { styled, Stack } from "@mui/material";
 import { useEffect, useRef, forwardRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
@@ -151,21 +151,14 @@ export default function Player(props) {
   }, [videoRef, channel, source, data]);
 
   return (
-    <Parent>
+    <>
       <Video muted autoPlay playsInline ref={videoRef} />
-      <Controls player={videoRef.current} />
-    </Parent>
+      <Stack>
+        <Controls player={videoRef.current} />
+      </Stack>
+    </>
   );
 }
-
-const Parent = styled((props) => <div {...props} />)`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  overflow: hidden;
-`;
 
 const Video = styled(
   forwardRef(({ ...props }, ref) => <video {...props} ref={ref} />)

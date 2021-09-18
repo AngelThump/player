@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { CssBaseline } from "@mui/material";
+import { CssBaseline, styled } from "@mui/material";
 import { blue, grey } from "@mui/material/colors";
 import Player from "./Player";
 import PasswordProtect from "./PasswordProtect";
@@ -16,7 +16,7 @@ export default function App() {
   const darkTheme = createTheme({
     palette: {
       background: {
-        default: "#000000",
+        default: "#0e0e10",
         secondary: "#1d1d1d",
       },
       text: {
@@ -63,15 +63,26 @@ export default function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      {data === undefined ? (
-        <></>
-      ) : data === null || !data.user ? (
-        <Player channel={channel} />
-      ) : data.user.password_protect ? (
-        <PasswordProtect channel={channel} data={data} />
-      ) : (
-        <Player channel={channel} data={data} />
-      )}
+      <Parent>
+        {data === undefined ? (
+          <></>
+        ) : data === null || !data.user ? (
+          <Player channel={channel} />
+        ) : data.user.password_protect ? (
+          <PasswordProtect channel={channel} data={data} />
+        ) : (
+          <Player channel={channel} data={data} />
+        )}
+      </Parent>
     </ThemeProvider>
   );
 }
+
+const Parent = styled((props) => <div {...props} />)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+`;

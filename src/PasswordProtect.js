@@ -1,6 +1,7 @@
 import Player from "./Player";
-import { Alert, Stack, Input, Button, FormControl } from "@mui/material";
+import { Alert, Stack, Input, Button, Box } from "@mui/material";
 import { useState } from "react";
+import logo from "./assets/logo.png";
 
 const API_BASE = "https://api.angelthump.com/v2";
 
@@ -42,10 +43,34 @@ export default function PasswordProtect(props) {
   return showPlayer ? (
     <Player data={data} channel={channel} />
   ) : (
-    <Stack sx={{ width: "100%" }}>
-      {error === true ? <Alert severity="error">Wrong Password!</Alert> : <></>}
-      <FormControl>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100%",
+        width: "100%",
+      }}
+    >
+      <Stack
+        sx={{
+          maxWidth: "20rem",
+          width: "100%",
+        }}
+        spacing={4}
+      >
+        <img src={logo} alt="" />
+        {error === true ? (
+          <Alert severity="error">Wrong Password!</Alert>
+        ) : (
+          <></>
+        )}
         <Input
+          autoFocus={true}
+          autoCapitalize={false}
+          autoComplete={false}
+          autoCorrect={false}
+          type="password"
           onChange={handlePasswordInput}
           placeholder="Enter Stream Password"
         />
@@ -56,7 +81,7 @@ export default function PasswordProtect(props) {
         >
           Submit
         </Button>
-      </FormControl>
-    </Stack>
+      </Stack>
+    </Box>
   );
 }
