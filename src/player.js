@@ -1,9 +1,10 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Stack } from "@mui/material";
+import { styled, Grid } from "@mui/material";
 import { useEffect, useRef, forwardRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
 import Controls from "./Controls";
+import { isDev } from "./utils/Dev";
 
 const hlsjsOptions = {
   debug: false,
@@ -11,33 +12,42 @@ const hlsjsOptions = {
   startLevel: localStorageGetItem("lastSourceID") || 0,
   liveSyncDurationCount: 2,
   maxBufferSize: 10 * 1000 * 1000,
-  backBufferLength: Infinity,
+  backBufferLength: 0,
   startFragPrefetch: true,
   defaultAudioCodec: "mp4a.40.2",
   //progressive: true,
 };
-//const M3U8_BASE = "https://vigor.angelthump.com";
-const M3U8_BASE = "https://nyc-haproxy.angelthump.com";
+const M3U8_BASE = isDev
+  ? "https://nyc-haproxy.angelthump.com"
+  : "https://vigor.angelthump.com";
 
 export default function Player(props) {
   const videoRef = useRef(null);
   const { channel, data } = props;
-  //const source = `${M3U8_BASE}/hls/${channel}.m3u8`;
-  const source = `${M3U8_BASE}/hls/${channel}/index.m3u8`;
+  const source = isDev
+    ? `${M3U8_BASE}/hls/${channel}/index.m3u8`
+    : `${M3U8_BASE}/hls/${channel}.m3u8`;
 
   useEffect(() => {
-    const player = videoRef.current;
-    let viewCountSocket;
+    const player = videoRef.current,
+      MSE = Hls.isSupported();
+    let viewCountSocket,
+      hls = new Hls(hlsjsOptions);
 
     const loadHLS = () => {
-      const hls = new Hls(hlsjsOptions);
-      hls.loadSource(source);
       hls.attachMedia(player);
-      hls.on(Hls.Events.MANIFEST_PARSED, function () {
-        player.play();
+      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+        console.info("HLS attached to media");
+        if (data) hls.loadSource(source);
+        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+          console.info(
+            `Manifest Loaded.. ${data.levels.length} quality levels`
+          );
+          player.play();
+        });
       });
 
-      hls.on(Hls.Events.ERROR, function (event, data) {
+      hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           if (viewCountSocket.readyState === 1) {
             viewCountSocket.send(
@@ -46,15 +56,10 @@ export default function Player(props) {
           }
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.error(`fatal network error encountered, try to recover`);
               console.error(data);
-
-              if (data.details !== "manifestLoadError") {
-                hls.startLoad();
-              }
+              if (data.details !== "manifestLoadError") hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.error(`fatal media error encountered, try to recover`);
               console.error(data);
               hls.recoverMediaError();
               break;
@@ -92,6 +97,8 @@ export default function Player(props) {
       };
     };
 
+    if (data) UWS_CONNECT();
+
     canAutoplay.video().then(function (obj) {
       if (obj.result === true) {
         if (JSON.parse(localStorageGetItem("muted"))) {
@@ -102,7 +109,7 @@ export default function Player(props) {
       }
     });
 
-    if (data.live) player.poster = data.user.offline_banner_url;
+    if (data && !data.live) player.poster = data.user.offline_banner_url;
 
     player.volume = JSON.parse(localStorageGetItem("volume")) || 1;
 
@@ -113,6 +120,9 @@ export default function Player(props) {
 
     player.onplay = (event) => {
       console.log(event);
+      if (MSE) hls.startLoad();
+      //Shift back to live
+      player.currentTime = -1;
       if (viewCountSocket.readyState === 1) {
         viewCountSocket.send(
           JSON.stringify({ action: "join", channel: channel })
@@ -126,6 +136,8 @@ export default function Player(props) {
 
     player.onpause = (event) => {
       console.log(event);
+      //stop downloading ts files when paused.
+      if (MSE) hls.stopLoad();
       if (viewCountSocket.readyState === 1) {
         viewCountSocket.send(
           JSON.stringify({ action: "leave", channel: channel })
@@ -137,25 +149,26 @@ export default function Player(props) {
       !Hls.isSupported() &&
       player.canPlayType("application/vnd.apple.mpegurl")
     ) {
-      console.info("HLS MODE: Native");
-      player.src = source;
+      console.info("HLS MODE: NATIVE");
+      if (data) player.src = source;
 
       player.addEventListener("loadedmetadata", function () {
         player.play();
       });
-    } else {
+    } else if (MSE) {
       console.info("HLS MODE: MSE");
       loadHLS();
+    } else {
+      console.info("Browser does not support Native HLS or MSE!");
     }
-    UWS_CONNECT();
   }, [videoRef, channel, source, data]);
 
   return (
     <>
-      <Video muted autoPlay playsInline ref={videoRef} />
-      <Stack>
+      <Video controls muted autoPlay playsInline ref={videoRef} />
+      <Grid>
         <Controls player={videoRef.current} />
-      </Stack>
+      </Grid>
     </>
   );
 }
