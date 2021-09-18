@@ -4,7 +4,7 @@ let sessionStorage;
 try {
   localStorage = window.localStorage;
   sessionStorage = window.sessionStorage;
-} catch(e) {}
+} catch (e) {}
 
 export function localStorageGetItem(key) {
   try {
