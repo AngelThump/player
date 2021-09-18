@@ -11,7 +11,8 @@ export default function PasswordProtect(props) {
   const [password, setPassword] = useState("");
   const { data, channel } = props;
 
-  const checkPass = () => {
+  const checkPass = (e) => {
+    e.preventDefault();
     fetch(`${API_BASE}/user/stream_password`, {
       method: "post",
       body: JSON.stringify({
@@ -65,22 +66,28 @@ export default function PasswordProtect(props) {
         ) : (
           <></>
         )}
-        <Input
-          autoFocus={true}
-          autoCapitalize={false}
-          autoComplete={false}
-          autoCorrect={false}
-          type="password"
-          onChange={handlePasswordInput}
-          placeholder="Enter Stream Password"
-        />
-        <Button
-          onClick={checkPass}
-          variant="contained"
-          disabled={password.length === 0}
-        >
-          Submit
-        </Button>
+        <form>
+          <Stack spacing={2}>
+            <Input
+              autoFocus={true}
+              autoCapitalize="false"
+              autoComplete="false"
+              autoCorrect="false"
+              type="password"
+              onChange={handlePasswordInput}
+              placeholder="Enter Stream Password"
+            />
+            <Button
+              type="submit"
+              onClick={checkPass}
+              variant="contained"
+              disabled={password.length === 0}
+              color={error ? "error" : "primary"}
+            >
+              Submit
+            </Button>
+          </Stack>
+        </form>
       </Stack>
     </Box>
   );

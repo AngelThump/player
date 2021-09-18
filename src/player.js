@@ -166,4 +166,5 @@ const Video = styled(
   height: 100%;
   width: 100%;
   outline: none;
+  background: #000000;
 `;
