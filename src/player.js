@@ -218,11 +218,11 @@ export default function Player(props) {
               <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} />
               <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
                 {playerAPI.paused ? (
-                  <PlayOverlay>
+                  <PlayOverlay onClick={() => player.play()}>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
                       <Box sx={{ position: "absolute" }}>
-                        <IconButton onClick={(e) => player.play()}>
-                          <PlayArrowIcon sx={{fontSize: 80}} />
+                        <IconButton onClick={() => player.play()}>
+                          <PlayArrowIcon sx={{ fontSize: 80 }} />
                         </IconButton>
                       </Box>
                     </Box>
@@ -322,4 +322,5 @@ const PlayOverlay = styled((props) => <div {...props} />)`
   flex-direction: column;
   inset: 0px;
   position: absolute;
+  cursor: pointer;
 `;
