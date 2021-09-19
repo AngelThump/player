@@ -1,16 +1,17 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Box, Typography } from "@mui/material";
-import { useEffect, useRef, forwardRef, useState } from "react";
+import { styled, Grid, Box, Typography, IconButton } from "@mui/material";
+import { useCallback, forwardRef, useState, useEffect } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
 import Controls from "./Controls";
 import { isDev } from "./utils/Dev";
 import biblethump from "./assets/biblethump.png";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 const hlsjsOptions = {
   debug: false,
   enableWorker: true,
-  startLevel: localStorageGetItem("lastSourceID") || 0,
+  startLevel: JSON.parse(localStorageGetItem("lastSourceID")) || 0,
   liveSyncDurationCount: 2,
   maxBufferSize: 10 * 1000 * 1000,
   backBufferLength: 0,
@@ -18,31 +19,47 @@ const hlsjsOptions = {
   defaultAudioCodec: "mp4a.40.2",
   //progressive: true,
 };
-const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.angelthump.com";
+const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.angelthump.com",
+  MSE = Hls.isSupported();
+let hls;
 
 export default function Player(props) {
-  const videoRef = useRef(null);
   const { channel, data } = props;
   const [live, setLive] = useState(data && data.type === "live");
-  const source = isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8` : `${M3U8_BASE}/hls/${channel}.m3u8`;
+  const [player, setPlayer] = useState(null);
+  const [videoContainer, setVideoContainer] = useState(null);
+  const [overlayVisible, setOverlayVisible] = useState(true);
+  const [socket, setSocket] = useState(null);
+  const [playerAPI, setPlayerAPI] = useState({
+    volume: JSON.parse(localStorageGetItem("volume")) || 1,
+    source: isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8` : `${M3U8_BASE}/hls/${channel}.m3u8`,
+    version: process.env.REACT_APP_VERSION,
+    hlsJsVersion: Hls.version,
+    fullscreen: false,
+    muted: JSON.parse(localStorageGetItem("muted")) || false,
+    canUsePIP: document.pictureInPictureEnabled,
+    pip: false,
+  });
+
+  const videoRef = useCallback((node) => {
+    setPlayer(node);
+  }, []);
+
+  const videoContainerRef = useCallback((node) => {
+    setVideoContainer(node);
+  }, []);
 
   useEffect(() => {
-    if (!channel) return;
-    const player = videoRef.current,
-      MSE = Hls.isSupported();
-    let viewCountSocket,
-      hls = new Hls(hlsjsOptions);
-
     const UWS_CONNECT = () => {
-      viewCountSocket = new WebSocket("wss://viewer-api.angelthump.com/uws/");
-      viewCountSocket.onopen = () => {
-        viewCountSocket.send(JSON.stringify({ action: "subscribe", channel: channel }));
+      const tmpSocket = new WebSocket("wss://viewer-api.angelthump.com/uws/");
+      tmpSocket.onopen = () => {
+        tmpSocket.send(JSON.stringify({ action: "subscribe", channel: channel }));
         setInterval(() => {
-          viewCountSocket.send("{}");
+          tmpSocket.send("{}");
         }, 10 * 1000);
       };
 
-      viewCountSocket.onmessage = (message) => {
+      tmpSocket.onmessage = (message) => {
         const jsonObject = JSON.parse(message.data);
         const action = jsonObject.action;
         if (action === "reload") {
@@ -54,24 +71,26 @@ export default function Player(props) {
           setLive(jsonObject.live);
         }
       };
+      setSocket(tmpSocket);
     };
-
     UWS_CONNECT();
+  }, [channel]);
 
+  if (player && channel) {
     const loadHLS = () => {
+      hls = new Hls(hlsjsOptions);
       hls.attachMedia(player);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
         console.info("HLS attached to media");
-        if (live) hls.loadSource(source);
+        hls.loadSource(playerAPI.source);
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-          console.info(`Manifest Loaded.. ${data.levels.length} quality levels`);
           player.play();
         });
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          if (viewCountSocket.readyState === 1) viewCountSocket.send(JSON.stringify({ action: "leave", channel: channel }));
+          if (socket.readyState === 1) socket.send(JSON.stringify({ action: "leave", channel: channel }));
 
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -92,75 +111,167 @@ export default function Player(props) {
       });
     };
 
-    canAutoplay.video().then(function (obj) {
-      if (obj.result === true) {
-        if (JSON.parse(localStorageGetItem("muted"))) {
-          player.muted = true;
+    if (!player.src && live) {
+      canAutoplay.video().then(function (obj) {
+        if (obj.result === true) {
+          player.muted = playerAPI.muted;
         } else {
-          player.muted = false;
+          player.muted = true;
+          setPlayerAPI({ ...playerAPI, muted: true });
         }
-      }
-    });
-
-    player.volume = JSON.parse(localStorageGetItem("volume")) || 1;
-
-    player.onvolumechange = (event) => {
-      localStorageSetItem(`volume`, player.volume);
-      localStorageSetItem(`muted`, player.muted);
-    };
-
-    player.onplay = (event) => {
-      console.log(event);
-      if (MSE) hls.startLoad();
-      //Shift back to live
-      player.currentTime = -1;
-      if (viewCountSocket.readyState === 1) viewCountSocket.send(JSON.stringify({ action: "join", channel: channel }));
-    };
-
-    player.onplaying = (event) => {
-      console.log(event);
-    };
-
-    player.onpause = (event) => {
-      console.log(event);
-      //stop downloading ts files when paused.
-      if (MSE) hls.stopLoad();
-      if (viewCountSocket.readyState === 1) viewCountSocket.send(JSON.stringify({ action: "leave", channel: channel }));
-    };
-
-    if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
-      console.info("HLS MODE: NATIVE");
-      if (live) player.src = source;
-
-      player.addEventListener("loadedmetadata", function () {
-        player.play();
       });
-    } else if (MSE) {
-      console.info("HLS MODE: MSE");
-      if (live) loadHLS();
-    } else {
-      console.info("Browser does not support Native HLS or MSE!");
+
+      player.volume = playerAPI.volume;
+
+      player.onvolumechange = (event) => {
+        localStorageSetItem(`volume`, player.volume);
+        localStorageSetItem(`muted`, player.muted);
+        setPlayerAPI({ ...playerAPI, muted: player.muted, volume: player.volume });
+      };
+
+      player.onplay = (event) => {
+        console.log(event);
+        setPlayerAPI({ ...playerAPI, paused: false });
+        if (MSE) hls.startLoad();
+        //Shift back to live
+        player.currentTime = -1;
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: "join", channel: channel }));
+      };
+
+      player.onplaying = (event) => {
+        console.log(event);
+      };
+
+      player.onpause = (event) => {
+        console.log(event);
+        setPlayerAPI({ ...playerAPI, paused: true });
+        //stop downloading ts files when paused.
+        if (MSE) hls.stopLoad();
+        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: "leave", channel: channel }));
+      };
+
+      player.onended = (event) => {
+        console.log(event);
+      };
+
+      //need testing
+      if (!live && player.src) {
+        player.removeAttribute("src");
+        if (MSE) hls.destroy();
+      }
+
+      if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
+        console.info("HLS MODE: NATIVE");
+        player.src = playerAPI.source;
+
+        player.addEventListener("loadedmetadata", function () {
+          player.play();
+        });
+      } else if (MSE) {
+        console.info("HLS MODE: MSE");
+        loadHLS();
+      } else {
+        console.info("Browser does not support Native HLS or MSE!");
+      }
+
+      if (overlayVisible)
+        setTimeout(() => {
+          setOverlayVisible(false);
+        }, 5000);
     }
-  }, [videoRef, channel, source, live]);
+  }
+
+  const mouseMove = () => {
+    if (overlayVisible) return;
+    setOverlayVisible(true);
+    setTimeout(() => {
+      setOverlayVisible(false);
+    }, 6000);
+  };
+
+  const handleFullscreen = (e) => {
+    if (!videoContainer) return;
+
+    if (document.fullscreenElement === null) {
+      if (videoContainer.requestFullscreen) {
+        videoContainer.requestFullscreen();
+      } else if (videoContainer.mozRequestFullScreen) {
+        videoContainer.mozRequestFullScreen();
+      } else if (videoContainer.webkitRequestFullscreen) {
+        videoContainer.webkitRequestFullscreen();
+      }
+      setPlayerAPI({ ...playerAPI, fullscreen: true });
+    } else {
+      document.exitFullscreen();
+      setPlayerAPI({ ...playerAPI, fullscreen: false });
+    }
+  };
+
+  const handlePIP = () => {
+    if (document.pictureInPictureElement) {
+      document.exitPictureInPicture();
+      setPlayerAPI({ ...playerAPI, pip: false });
+    } else {
+      player.requestPictureInPicture();
+      setPlayerAPI({ ...playerAPI, pip: true });
+    }
+  };
 
   return (
-    <VideoContainer>
+    <>
       {channel ? (
-        <>
-          <Video playsInline ref={videoRef} />
-          <Grid sx={{ position: "absolute", inset: "0px" }}>
-            {!live ? (
+        <VideoContainer>
+          {live ? (
+            <div ref={videoContainerRef} onDoubleClick={handleFullscreen} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
+              <Video autoPlay playsInline ref={videoRef} />
+              <Box onDoubleClick={(e) => e.stopPropagation()}>
+                {playerAPI.paused ? (
+                  <PlayOverlay>
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
+                      <Box sx={{ position: "absolute" }}>
+                        <IconButton onClick={(e) => player.play()}>
+                          <PlayArrowIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </PlayOverlay>
+                ) : (
+                  <></>
+                )}
+                <Controls
+                  player={player}
+                  playerAPI={playerAPI}
+                  hls={hls}
+                  data={data}
+                  live={live}
+                  overlayVisible={overlayVisible}
+                  handleFullscreen={handleFullscreen}
+                  handlePIP={handlePIP}
+                  channel={channel}
+                />
+              </Box>
+            </div>
+          ) : (
+            <Box sx={{ position: "absolute", inset: "0px" }}>
               <OfflineBanner
                 style={{
                   backgroundImage: `url('${data && data.user.offline_banner_url}')`,
                 }}
               />
-            ) : (
-              <></>
-            )}
-            <Controls player={videoRef.current} />
-          </Grid>
-        </>
+              <Controls
+                player={player}
+                playerAPI={playerAPI}
+                hls={hls}
+                data={data}
+                live={live}
+                overlayVisible={overlayVisible}
+                handleFullscreen={handleFullscreen}
+                handlePIP={handlePIP}
+                channel={channel}
+              />
+            </Box>
+          )}
+        </VideoContainer>
       ) : (
         <Box sx={{ flexGrow: 1 }}>
           <Grid container justifyContent="center" alignItems="center" direction="column" style={{ minHeight: "100vh" }}>
@@ -177,11 +288,11 @@ export default function Player(props) {
           </Grid>
         </Box>
       )}
-    </VideoContainer>
+    </>
   );
 }
 
-const VideoContainer = styled((props) => <div {...props} />)`
+const VideoContainer = styled(forwardRef(({ ...props }, ref) => <div {...props} ref={ref} />))`
   background: #000;
   overflow: hidden !important;
   position: absolute !important;
@@ -210,4 +321,13 @@ const Image = styled((props) => <img {...props} alt="" />)`
   display: block;
   max-width: 100%;
   max-height: 100%;
+`;
+
+const PlayOverlay = styled((props) => <div {...props} />)`
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  inset: 0px;
+  position: absolute;
 `;
