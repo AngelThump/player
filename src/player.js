@@ -1,6 +1,6 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
 import { styled, Grid, Box, Typography, IconButton } from "@mui/material";
-import { useCallback, forwardRef, useState, useEffect } from "react";
+import { useCallback, forwardRef, useState, useEffect, useRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
 import Controls from "./Controls";
@@ -20,7 +20,8 @@ const hlsjsOptions = {
   //progressive: true,
 };
 const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.angelthump.com",
-  MSE = Hls.isSupported();
+  MSE = Hls.isSupported(),
+  WEBSOCKET_URI = "wss://viewer-api.angelthump.com:8888/uws";
 let hls;
 
 export default function Player(props) {
@@ -29,17 +30,14 @@ export default function Player(props) {
   const [player, setPlayer] = useState(null);
   const [videoContainer, setVideoContainer] = useState(null);
   const [overlayVisible, setOverlayVisible] = useState(true);
-  const [socket, setSocket] = useState(null);
   const [playerAPI, setPlayerAPI] = useState({
-    volume: JSON.parse(localStorageGetItem("volume")) || 1,
-    source: isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8` : `${M3U8_BASE}/hls/${channel}.m3u8`,
     version: process.env.REACT_APP_VERSION,
     hlsJsVersion: Hls.version,
     fullscreen: false,
-    muted: JSON.parse(localStorageGetItem("muted")) || false,
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
   });
+  const ws = useRef(null);
 
   const videoRef = useCallback((node) => {
     setPlayer(node);
@@ -50,47 +48,92 @@ export default function Player(props) {
   }, []);
 
   useEffect(() => {
-    const UWS_CONNECT = () => {
-      const tmpSocket = new WebSocket("wss://viewer-api.angelthump.com/uws/");
-      tmpSocket.onopen = () => {
-        tmpSocket.send(JSON.stringify({ action: "subscribe", channel: channel }));
-        setInterval(() => {
-          tmpSocket.send("{}");
-        }, 10 * 1000);
-      };
+    if (!channel) return;
+    const ws_connect = () => {
+      ws.current = new WebSocket(WEBSOCKET_URI);
+      ws.current.onopen = () => ws.current.send(JSON.stringify({ action: "subscribe", channel: channel }));
+      ws.current.onclose = () => setTimeout(ws_connect, 5000);
 
-      tmpSocket.onmessage = (message) => {
+      ws.current.onmessage = (message) => {
         const jsonObject = JSON.parse(message.data);
-        const action = jsonObject.action;
-        if (action === "reload") {
-          window.location.reload();
-        } else if (action === "redirect") {
-          window.location.search = `?channel=${jsonObject.punt_username}`;
-        } else if (action === "live") {
-          console.log("socket sent live: " + jsonObject.live);
-          setLive(jsonObject.live);
+        switch (jsonObject.action) {
+          case "reload":
+            window.location.reload();
+            break;
+          case "redirect":
+            window.location.search = `?channel=${jsonObject.punt_username}`;
+            break;
+          case "live":
+            console.log("ws sent live: " + jsonObject.live);
+            setLive(jsonObject.live);
+            break;
+          default:
+            break;
         }
       };
-      setSocket(tmpSocket);
     };
-    UWS_CONNECT();
+    ws_connect();
+    return (ws.current = null);
   }, [channel]);
 
-  if (player && channel) {
+  useEffect(() => {
+    if (!player || !channel) return;
+    canAutoplay.video().then(function (obj) {
+      if (obj.result === true) {
+        player.muted = JSON.parse(localStorageGetItem("muted")) || false;
+      } else {
+        player.muted = true;
+      }
+    });
+
+    player.volume = JSON.parse(localStorageGetItem("volume")) || 1;
+
+    player.onvolumechange = (event) => {
+      localStorageSetItem(`volume`, player.volume);
+      localStorageSetItem(`muted`, player.muted);
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, muted: player.muted, volume: player.volume }));
+    };
+
+    player.onplay = (event) => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false }));
+      if (MSE) hls.startLoad();
+      //Shift back to live
+      player.currentTime = -1;
+      if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "join", channel: channel }));
+    };
+
+    player.onplaying = (event) => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
+    };
+
+    player.onpause = (event) => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true }));
+      //stop downloading ts files when paused.
+      if (MSE) hls.stopLoad();
+      if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
+    };
+
+    const source = isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8` : `${M3U8_BASE}/hls/${channel}.m3u8`;
+    setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: player.volume, muted: player.muted }));
+
     const loadHLS = () => {
       hls = new Hls(hlsjsOptions);
       hls.attachMedia(player);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
         console.info("HLS attached to media");
-        hls.loadSource(playerAPI.source);
+        hls.loadSource(source);
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
           player.play();
         });
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.type === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+          console.log(data);
+          setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: true }));
+        }
         if (data.fatal) {
-          if (socket.readyState === 1) socket.send(JSON.stringify({ action: "leave", channel: channel }));
+          if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
 
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -111,82 +154,31 @@ export default function Player(props) {
       });
     };
 
-    if (!player.src && live) {
-      canAutoplay.video().then(function (obj) {
-        if (obj.result === true) {
-          player.muted = playerAPI.muted;
-        } else {
-          player.muted = true;
-          setPlayerAPI({ ...playerAPI, muted: true });
-        }
+    if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
+      console.info("HLS MODE: NATIVE");
+      player.src = source;
+
+      player.addEventListener("loadedmetadata", function () {
+        player.play();
       });
-
-      player.volume = playerAPI.volume;
-
-      player.onvolumechange = (event) => {
-        localStorageSetItem(`volume`, player.volume);
-        localStorageSetItem(`muted`, player.muted);
-        setPlayerAPI({ ...playerAPI, muted: player.muted, volume: player.volume });
-      };
-
-      player.onplay = (event) => {
-        console.log(event);
-        setPlayerAPI({ ...playerAPI, paused: false });
-        if (MSE) hls.startLoad();
-        //Shift back to live
-        player.currentTime = -1;
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: "join", channel: channel }));
-      };
-
-      player.onplaying = (event) => {
-        console.log(event);
-      };
-
-      player.onpause = (event) => {
-        console.log(event);
-        setPlayerAPI({ ...playerAPI, paused: true });
-        //stop downloading ts files when paused.
-        if (MSE) hls.stopLoad();
-        if (socket && socket.readyState === 1) socket.send(JSON.stringify({ action: "leave", channel: channel }));
-      };
-
-      player.onended = (event) => {
-        console.log(event);
-      };
-
-      //need testing
-      if (!live && player.src) {
-        player.removeAttribute("src");
-        if (MSE) hls.destroy();
-      }
-
-      if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
-        console.info("HLS MODE: NATIVE");
-        player.src = playerAPI.source;
-
-        player.addEventListener("loadedmetadata", function () {
-          player.play();
-        });
-      } else if (MSE) {
-        console.info("HLS MODE: MSE");
-        loadHLS();
-      } else {
-        console.info("Browser does not support Native HLS or MSE!");
-      }
-
-      if (overlayVisible)
-        setTimeout(() => {
-          setOverlayVisible(false);
-        }, 5000);
+    } else if (MSE) {
+      console.info("HLS MODE: MSE");
+      loadHLS();
+    } else {
+      console.info("Browser does not support Native HLS or MSE!");
     }
-  }
+  }, [player, channel]);
+
+  useEffect(() => {
+    if (overlayVisible)
+      setTimeout(() => {
+        setOverlayVisible(false);
+      }, 6000);
+  }, [overlayVisible]);
 
   const mouseMove = () => {
     if (overlayVisible) return;
     setOverlayVisible(true);
-    setTimeout(() => {
-      setOverlayVisible(false);
-    }, 6000);
   };
 
   const handleFullscreen = (e) => {
@@ -222,9 +214,9 @@ export default function Player(props) {
       {channel ? (
         <VideoContainer>
           {live ? (
-            <div ref={videoContainerRef} onDoubleClick={handleFullscreen} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
-              <Video autoPlay playsInline ref={videoRef} />
-              <Box onDoubleClick={(e) => e.stopPropagation()}>
+            <div ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
+              <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} />
+              <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
                 {playerAPI.paused ? (
                   <PlayOverlay>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>

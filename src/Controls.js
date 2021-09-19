@@ -15,6 +15,7 @@ import { localStorageGetItem } from "./storage";
 export default function Controls(props) {
   const [showSettings, setShowSettings] = useState(false);
   const { player, playerAPI, hls, data, live, overlayVisible, handleFullscreen, handlePIP, channel } = props;
+
   let videoPlaybackQuality;
   if (player) {
     videoPlaybackQuality = player.getVideoPlaybackQuality();
@@ -86,7 +87,7 @@ export default function Controls(props) {
                   </Tooltip>
                 )}
                 <Box sx={{ height: "100%", width: "7rem", display: "flex", alignItems: "center", ml: 1 }}>
-                  <Slider value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />
+                  {playerAPI.muted === undefined ? <></> : <Slider value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />}
                 </Box>
               </>
             ) : (
