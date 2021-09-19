@@ -222,7 +222,7 @@ export default function Player(props) {
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
                       <Box sx={{ position: "absolute" }}>
                         <IconButton onClick={(e) => player.play()}>
-                          <PlayArrowIcon />
+                          <PlayArrowIcon sx={{fontSize: 80}} />
                         </IconButton>
                       </Box>
                     </Box>
