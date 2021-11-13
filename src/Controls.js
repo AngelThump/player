@@ -1,4 +1,4 @@
-import { styled, Box, Tooltip, IconButton, Fade, Slider, Paper, MenuList, MenuItem, ListItemText, Typography, Divider, ClickAwayListener } from "@mui/material";
+import { styled, Box, Tooltip, IconButton, Fade, Slider, Paper, MenuList, MenuItem, ListItemText, Typography, Divider, ClickAwayListener, Switch, ListItemIcon } from "@mui/material";
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { forwardRef, useState } from "react";
@@ -10,33 +10,21 @@ import PictureInPictureIcon from "@mui/icons-material/PictureInPicture";
 import PictureInPictureOutlinedIcon from "@mui/icons-material/PictureInPictureOutlined";
 import Chromecast from "./Chromecast";
 import SettingsIcon from "@mui/icons-material/Settings";
-import { localStorageGetItem } from "./storage";
+import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import { localStorageSetItem } from "./storage";
 
 export default function Controls(props) {
   const [showSettings, setShowSettings] = useState(false);
-  const { player, playerAPI, hls, data, live, overlayVisible, handleFullscreen, handlePIP, channel } = props;
+  const [menuToShow, setMenuToShow] = useState("");
+  const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, channel, patreon, setPatreonServers, setShowStats, showStats } = props;
 
-  let videoPlaybackQuality;
-  if (player) {
-    videoPlaybackQuality = player.getVideoPlaybackQuality();
-  }
-
-  const onPlay = () => {
-    if (!playerAPI.paused) return;
-    player.play();
-  };
-
-  const onPause = () => {
-    if (playerAPI.paused) return;
-    player.pause();
-  };
-
-  const unmuteHandler = () => {
-    player.muted = false;
+  const playHandler = () => {
+    playerAPI.paused ? player.play() : player.pause();
   };
 
   const muteHandler = () => {
-    player.muted = true;
+    player.muted = !playerAPI.muted;
   };
 
   const handleVolumeChange = (e, newValue) => {
@@ -45,7 +33,6 @@ export default function Controls(props) {
   };
 
   const toggleSettings = () => {
-    console.log(showSettings);
     setShowSettings(!showSettings);
   };
 
@@ -53,8 +40,27 @@ export default function Controls(props) {
     setShowSettings(false);
   };
 
+  const handleQualityChange = (e, index) => {
+    if (hls) {
+      if (hls.currentLevel === index) return;
+      hls.nextLevel = index;
+      localStorageSetItem("level", index);
+    }
+
+    //TODO: native hls quality change
+  };
+
+  const handlePatreonServers = (e) => {
+    localStorageSetItem("patreon", !patreon);
+    setPatreonServers(!patreon);
+  };
+
+  const handlePlaybackStats = (e) => {
+    setShowStats(!showStats);
+  };
+
   return (
-    <Fade in={overlayVisible}>
+    <Fade in={overlayVisible} onDoubleClick={(e) => e.stopPropagation()}>
       <Parent>
         <Box sx={{ display: "flex", mb: 1, mt: 1, ml: 1, mr: 1 }}>
           <ControlGroup style={{ justifyContent: "flex-start" }}>
@@ -62,20 +68,20 @@ export default function Controls(props) {
               <>
                 {playerAPI.paused ? (
                   <Tooltip title="Play (space)">
-                    <IconButton onClick={onPlay}>
+                    <IconButton onClick={playHandler}>
                       <PlayArrowIcon />
                     </IconButton>
                   </Tooltip>
                 ) : (
                   <Tooltip title="Pause (space)">
-                    <IconButton onClick={onPause}>
+                    <IconButton onClick={playHandler}>
                       <PauseIcon />
                     </IconButton>
                   </Tooltip>
                 )}
                 {playerAPI.muted ? (
                   <Tooltip title="Unmute (m)">
-                    <IconButton onClick={unmuteHandler}>
+                    <IconButton onClick={muteHandler}>
                       <VolumeOffIcon />
                     </IconButton>
                   </Tooltip>
@@ -99,23 +105,58 @@ export default function Controls(props) {
               <ClickAwayListener onClickAway={handleClickAway}>
                 <div>
                   {showSettings ? (
-                    <Box sx={{ position: "absolute", inset: "auto 0px 100% auto", mr: 5 }}>
-                      <Paper sx={{ width: 220, maxWidth: "90%", minWidth: 110, display: "inline-block", background: "#050404" }}>
-                        <MenuList>
-                          <MenuItem>
-                            <ListItemText>Quality</ListItemText>
-                            <Typography variant="body2">{`${player.videoHeight}p >`}</Typography>
-                          </MenuItem>
-                          <Divider />
-                          <MenuItem>
-                            <ListItemText>Patreon</ListItemText>
-                            <Typography variant="body2">{`>`}</Typography>
-                          </MenuItem>
-                          <MenuItem>
-                            <ListItemText>Advanced</ListItemText>
-                            <Typography variant="body2">{`>`}</Typography>
-                          </MenuItem>
-                        </MenuList>
+                    <Box sx={{ position: "absolute", inset: "auto 0px 100% auto", mr: 6 }}>
+                      <Paper sx={{ minWidth: 200, display: "inline-block", background: "#050404" }}>
+                        {menuToShow === "quality" ? (
+                          <MenuList>
+                            <MenuItem onClick={() => setMenuToShow("")}>
+                              <ListItemText>{`< Back`}</ListItemText>
+                            </MenuItem>
+                            <Divider />
+                            {hls &&
+                              hls.levels.map((level, i) => (
+                                <MenuItem
+                                  key={`level ${i}`}
+                                  onClick={(e) => {
+                                    handleQualityChange(e, i);
+                                  }}
+                                >
+                                  <ListItemIcon>{hls.currentLevel === i ? <RadioButtonCheckedIcon color="primary" /> : <RadioButtonUncheckedIcon color="primary" />}</ListItemIcon>
+                                  <ListItemText>{`${level.name.length > 0 ? level.name : "Source"}`}</ListItemText>
+                                </MenuItem>
+                              ))}
+                          </MenuList>
+                        ) : menuToShow === "advanced" ? (
+                          <MenuList>
+                            <MenuItem onClick={() => setMenuToShow("")}>
+                              <ListItemText>{`< Back`}</ListItemText>
+                            </MenuItem>
+                            <Divider />
+                            <MenuItem onClick={handlePlaybackStats}>
+                              <ListItemText>Video Stats</ListItemText>
+                              <Switch edge="end" checked={showStats} size="small" />
+                            </MenuItem>
+                          </MenuList>
+                        ) : (
+                          <MenuList sx={{ pl: 1, pr: 1 }}>
+                            <MenuItem onClick={() => setMenuToShow("quality")}>
+                              <ListItemText>Quality</ListItemText>
+                              <Box sx={{ mr: 1 }}>
+                                <Typography variant="caption">{`${hls && hls.levels[0] ? hls.levels[0].name : ""}`}</Typography>
+                              </Box>
+                              <Typography variant="body2">{`>`}</Typography>
+                            </MenuItem>
+                            <Divider />
+                            <MenuItem onClick={handlePatreonServers}>
+                              <ListItemText>Patreon Servers</ListItemText>
+                              <Switch edge="end" checked={patreon} size="small" />
+                            </MenuItem>
+                            <MenuItem onClick={() => setMenuToShow("advanced")}>
+                              <ListItemText>Advanced</ListItemText>
+                              <Typography variant="caption">{`>`}</Typography>
+                            </MenuItem>
+                          </MenuList>
+                        )}
                       </Paper>
                     </Box>
                   ) : (

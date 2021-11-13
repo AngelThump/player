@@ -7,11 +7,13 @@ import Controls from "./Controls";
 import { isDev } from "./utils/Dev";
 import biblethump from "./assets/biblethump.png";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { debounce } from "lodash";
+import Stats from "./Stats";
 
 const hlsjsOptions = {
   debug: false,
   enableWorker: true,
-  startLevel: JSON.parse(localStorageGetItem("lastSourceID")) || 0,
+  startLevel: JSON.parse(localStorageGetItem("level")) || 0,
   liveSyncDurationCount: 2,
   maxBufferSize: 10 * 1000 * 1000,
   backBufferLength: 0,
@@ -24,18 +26,28 @@ const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.
   WEBSOCKET_URI = "wss://viewer-api.angelthump.com:8888/uws";
 let hls;
 
+/**
+ * Hotkeys
+ * landscape fullscreen for mobile
+ * Test Chromecast
+ * Buffer circle
+ */
+
 export default function Player(props) {
   const { channel, data } = props;
   const [live, setLive] = useState(data && data.type === "live");
   const [player, setPlayer] = useState(null);
   const [videoContainer, setVideoContainer] = useState(null);
   const [overlayVisible, setOverlayVisible] = useState(true);
+  const [usePatreonServers, setPatreonServers] = useState(JSON.parse(localStorageGetItem("patreon")) || false);
+  const [showStats, setShowStats] = useState(false);
   const [playerAPI, setPlayerAPI] = useState({
     version: process.env.REACT_APP_VERSION,
     hlsJsVersion: Hls.version,
     fullscreen: false,
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
+    volume: JSON.parse(localStorageGetItem("volume")) || 1,
   });
   const ws = useRef(null);
 
@@ -79,14 +91,8 @@ export default function Player(props) {
   useEffect(() => {
     if (!player || !channel) return;
     canAutoplay.video().then(function (obj) {
-      if (obj.result === true) {
-        player.muted = JSON.parse(localStorageGetItem("muted")) || false;
-      } else {
-        player.muted = true;
-      }
+      player.muted = obj.result === true ? JSON.parse(localStorageGetItem("muted")) || false : (player.muted = true);
     });
-
-    player.volume = JSON.parse(localStorageGetItem("volume")) || 1;
 
     player.onvolumechange = (event) => {
       localStorageSetItem(`volume`, player.volume);
@@ -94,7 +100,7 @@ export default function Player(props) {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, muted: player.muted, volume: player.volume }));
     };
 
-    player.onplay = (event) => {
+    player.onplay = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false }));
       if (MSE) hls.startLoad();
       //Shift back to live
@@ -102,21 +108,22 @@ export default function Player(props) {
       if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "join", channel: channel }));
     };
 
-    player.onplaying = (event) => {
+    player.onplaying = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
     };
 
-    player.onpause = (event) => {
+    player.onpause = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true }));
       //stop downloading ts files when paused.
       if (MSE) hls.stopLoad();
       if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
     };
 
-    const source = isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8` : `${M3U8_BASE}/hls/${channel}.m3u8`;
-    setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: player.volume, muted: player.muted }));
+    const source = isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8?patreon=${usePatreonServers}` : `${M3U8_BASE}/hls/${channel}.m3u8?patreon=${usePatreonServers}`;
+    setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: JSON.parse(localStorageGetItem("volume")) || 1, muted: player.muted }));
 
     const loadHLS = () => {
+      if (hls) hls.destroy();
       hls = new Hls(hlsjsOptions);
       hls.attachMedia(player);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
@@ -167,16 +174,17 @@ export default function Player(props) {
     } else {
       console.info("Browser does not support Native HLS or MSE!");
     }
-  }, [player, channel]);
+  }, [player, channel, usePatreonServers]);
 
-  useEffect(() => {
-    if (overlayVisible)
-      setTimeout(() => {
-        setOverlayVisible(false);
-      }, 6000);
-  }, [overlayVisible]);
+  const disableOverlay = () => {
+    if (!overlayVisible) return;
+    setOverlayVisible(false);
+  };
+
+  const debouncedOverlayHandler = useCallback(debounce(disableOverlay, 6000), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mouseMove = () => {
+    debouncedOverlayHandler();
     if (overlayVisible) return;
     setOverlayVisible(true);
   };
@@ -192,77 +200,59 @@ export default function Player(props) {
       } else if (videoContainer.webkitRequestFullscreen) {
         videoContainer.webkitRequestFullscreen();
       }
-      setPlayerAPI({ ...playerAPI, fullscreen: true });
     } else {
       document.exitFullscreen();
-      setPlayerAPI({ ...playerAPI, fullscreen: false });
     }
+    setPlayerAPI({ ...playerAPI, fullscreen: !playerAPI.fullscreen });
   };
 
   const handlePIP = () => {
-    if (document.pictureInPictureElement) {
-      document.exitPictureInPicture();
-      setPlayerAPI({ ...playerAPI, pip: false });
-    } else {
-      player.requestPictureInPicture();
-      setPlayerAPI({ ...playerAPI, pip: true });
-    }
+    document.pictureInPictureElement ? document.exitPictureInPicture() : player.requestPictureInPicture();
+    setPlayerAPI({ ...playerAPI, pip: !playerAPI.pip });
   };
 
   return (
     <>
       {channel ? (
         <VideoContainer>
-          {live ? (
-            <div ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
-              <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} />
-              <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
-                {playerAPI.paused ? (
-                  <PlayOverlay onClick={() => player.play()}>
-                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
-                      <Box sx={{ position: "absolute" }}>
-                        <IconButton onClick={() => player.play()}>
-                          <PlayArrowIcon sx={{ fontSize: 80 }} />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </PlayOverlay>
-                ) : (
-                  <></>
-                )}
-                <Controls
-                  player={player}
-                  playerAPI={playerAPI}
-                  hls={hls}
-                  data={data}
-                  live={live}
-                  overlayVisible={overlayVisible}
-                  handleFullscreen={handleFullscreen}
-                  handlePIP={handlePIP}
-                  channel={channel}
+          <div ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
+            <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} volume={JSON.parse(localStorageGetItem("volume")) || 1} />
+            <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
+              {!live && (
+                <OfflineBanner
+                  style={{
+                    backgroundImage: `url('${data && data.user.offline_banner_url}')`,
+                  }}
                 />
-              </Box>
-            </div>
-          ) : (
-            <Box sx={{ position: "absolute", inset: "0px" }}>
-              <OfflineBanner
-                style={{
-                  backgroundImage: `url('${data && data.user.offline_banner_url}')`,
-                }}
-              />
+              )}
+              {playerAPI.paused && (
+                <PlayOverlay onClick={() => player.play()}>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
+                    <Box sx={{ position: "absolute" }}>
+                      <IconButton onClick={() => player.play()}>
+                        <PlayArrowIcon sx={{ fontSize: 80 }} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                </PlayOverlay>
+              )}
+              {showStats && <Stats hls={hls} player={player} setShowStats={setShowStats} playerAPI={playerAPI} />}
               <Controls
                 player={player}
                 playerAPI={playerAPI}
                 hls={hls}
-                data={data}
                 live={live}
-                overlayVisible={overlayVisible}
+                overlayVisible={live ? overlayVisible : true}
                 handleFullscreen={handleFullscreen}
                 handlePIP={handlePIP}
                 channel={channel}
+                patreon={usePatreonServers}
+                setPatreonServers={setPatreonServers}
+                showStats={showStats}
+                setShowStats={setShowStats}
               />
             </Box>
-          )}
+          </div>
         </VideoContainer>
       ) : (
         <Box sx={{ flexGrow: 1 }}>
