@@ -27,7 +27,6 @@ const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.
 let hls;
 
 /**
- * Hotkeys
  * landscape fullscreen for mobile
  * Test Chromecast
  */
@@ -55,6 +54,7 @@ export default function Player(props) {
   }, []);
 
   const videoContainerRef = useCallback((node) => {
+    node.focus();
     setVideoContainer(node);
   }, []);
 
@@ -75,7 +75,7 @@ export default function Player(props) {
             window.location.search = `?channel=${jsonObject.punt_username}`;
             break;
           case "live":
-            console.log("ws sent live: " + jsonObject.live);
+            console.info("ws sent live: " + jsonObject.live);
             setLive(jsonObject.live);
             break;
           default:
@@ -122,7 +122,6 @@ export default function Player(props) {
     setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: JSON.parse(localStorageGetItem("volume")) || 1, muted: player.muted }));
 
     const loadHLS = () => {
-      if (hls) hls.destroy();
       hls = new Hls(hlsjsOptions);
       hls.attachMedia(player);
       hls.on(Hls.Events.MEDIA_ATTACHED, () => {
@@ -170,6 +169,10 @@ export default function Player(props) {
     } else {
       console.info("Browser does not support Native HLS or MSE!");
     }
+
+    return () => {
+      if (hls) hls.destroy();
+    };
   }, [player, channel, usePatreonServers]);
 
   const disableOverlay = () => {
@@ -207,13 +210,27 @@ export default function Player(props) {
     setPlayerAPI({ ...playerAPI, pip: !playerAPI.pip });
   };
 
-  console.log(playerAPI);
+  const onKey = (e) => {
+    switch (e.keyCode) {
+      case 32:
+        playerAPI.paused ? player.play() : player.pause();
+        break;
+      case 77:
+        player.muted = !playerAPI.muted;
+        break;
+      case 70:
+        handleFullscreen();
+        break;
+      default:
+        break;
+    }
+  };
 
   return (
     <>
       {channel ? (
         <VideoContainer>
-          <div ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
+          <div tabIndex="-1" onKeyDown={onKey} ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
             <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} volume={JSON.parse(localStorageGetItem("volume")) || 1} />
             <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
               {!live && (
