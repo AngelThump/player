@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Box, Typography, IconButton, CircularProgress } from "@mui/material";
+import { styled, Grid, Box, Typography, IconButton, CircularProgress, useMediaQuery } from "@mui/material";
 import { useCallback, forwardRef, useState, useEffect, useRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
@@ -26,11 +26,6 @@ const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.
   WEBSOCKET_URI = "wss://viewer-api.angelthump.com:8888/uws";
 let hls;
 
-/**
- * landscape fullscreen for mobile
- * Test Chromecast
- */
-
 export default function Player(props) {
   const { channel, data } = props;
   const [live, setLive] = useState(data && data.type === "live");
@@ -48,13 +43,14 @@ export default function Player(props) {
     volume: JSON.parse(localStorageGetItem("volume")) || 1,
   });
   const ws = useRef(null);
+  const isMobile = useMediaQuery("(max-width: 800px)");
 
   const videoRef = useCallback((node) => {
     setPlayer(node);
   }, []);
 
   const videoContainerRef = useCallback((node) => {
-    node.focus();
+    if (node) node.focus();
     setVideoContainer(node);
   }, []);
 
@@ -188,7 +184,7 @@ export default function Player(props) {
     setOverlayVisible(true);
   };
 
-  const handleFullscreen = (e) => {
+  const handleFullscreen = async (e) => {
     if (!videoContainer) return;
 
     if (document.fullscreenElement === null) {
@@ -202,6 +198,12 @@ export default function Player(props) {
     } else {
       document.exitFullscreen();
     }
+
+    if (isMobile) {
+      const newOrientation = getOppositeOrientation();
+      await window.screen.orientation.lock(newOrientation).catch((e) => console.error(e));
+    }
+
     setPlayerAPI({ ...playerAPI, fullscreen: !playerAPI.fullscreen });
   };
 
@@ -224,6 +226,11 @@ export default function Player(props) {
       default:
         break;
     }
+  };
+
+  const getOppositeOrientation = () => {
+    const { type } = window.screen.orientation;
+    return type.startsWith("portrait") ? "landscape" : "portrait";
   };
 
   return (
