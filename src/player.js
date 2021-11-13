@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Box, Typography, IconButton } from "@mui/material";
+import { styled, Grid, Box, Typography, IconButton, CircularProgress } from "@mui/material";
 import { useCallback, forwardRef, useState, useEffect, useRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
@@ -30,7 +30,6 @@ let hls;
  * Hotkeys
  * landscape fullscreen for mobile
  * Test Chromecast
- * Buffer circle
  */
 
 export default function Player(props) {
@@ -135,10 +134,6 @@ export default function Player(props) {
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.type === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
-          console.log(data);
-          setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: true }));
-        }
         if (data.fatal) {
           if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
 
@@ -156,6 +151,7 @@ export default function Player(props) {
               break;
           }
         } else {
+          if (data.details === "bufferStalledError") setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: true }));
           console.error(data);
         }
       });
@@ -211,6 +207,8 @@ export default function Player(props) {
     setPlayerAPI({ ...playerAPI, pip: !playerAPI.pip });
   };
 
+  console.log(playerAPI);
+
   return (
     <>
       {channel ? (
@@ -224,6 +222,11 @@ export default function Player(props) {
                     backgroundImage: `url('${data && data.user.offline_banner_url}')`,
                   }}
                 />
+              )}
+              {playerAPI.buffering && (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                  <CircularProgress />
+                </Box>
               )}
               {playerAPI.paused && (
                 <PlayOverlay onClick={() => player.play()}>
