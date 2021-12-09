@@ -8,10 +8,11 @@ import CastProvider from "react-chromecast";
 const search = window.location.search;
 const params = new URLSearchParams(search);
 const channel = params.get("channel");
-const API_BASE = "https://api.angelthump.com/v2";
+const API_BASE = "https://api.angelthump.com/v3";
 
 export default function App() {
-  const [data, setData] = useState(undefined);
+  const [streamData, setStreamData] = useState(undefined);
+  const [userData, setUserData] = useState(undefined);
 
   let darkTheme = createTheme({
     palette: {
@@ -25,39 +26,47 @@ export default function App() {
   darkTheme = responsiveFontSizes(darkTheme);
 
   useEffect(() => {
-    function fetchApi() {
-      fetch(`${API_BASE}/streams/${channel}`)
+    function fetchStream() {
+      fetch(`${API_BASE}/streams?username=${channel}`)
         .then((response) => response.json())
         .then((response) => {
-          setData(response);
+          setStreamData(response[0]);
         })
         .catch((e) => {
-          setData(null);
+          setStreamData(null);
           console.error(e);
         });
     }
-    if (channel === null) {
-      setData(null);
-    } else {
-      fetchApi();
+    if (channel === null) setStreamData(null);
+    else fetchStream();
+
+    function fetchUser() {
+      fetch(`${API_BASE}/users?username=${channel}`)
+        .then((response) => response.json())
+        .then((response) => {
+          setUserData(response[0]);
+        })
+        .catch((e) => {
+          setUserData(null);
+          console.error(e);
+        });
     }
+
+    if (channel === null) setUserData(null);
+    else fetchUser();
   }, []);
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Parent>
-        {data === undefined ? (
+        {userData === undefined ? (
           <></>
-        ) : data === null || !data.user ? (
-          <CastProvider>
-            <Player channel={channel} />
-          </CastProvider>
-        ) : data.user.password_protect ? (
-          <PasswordProtect channel={channel} data={data} />
+        ) : userData && userData.password_protect ? (
+          <PasswordProtect channel={channel} streamData={streamData} userData={userData} />
         ) : (
           <CastProvider>
-            <Player channel={channel} data={data} />
+            <Player channel={channel} streamData={streamData} userData={userData} />
           </CastProvider>
         )}
       </Parent>

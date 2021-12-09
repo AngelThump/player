@@ -2,20 +2,23 @@ import Player from "./Player";
 import { Alert, Stack, Input, Button, Box } from "@mui/material";
 import { useState } from "react";
 import logo from "./assets/logo.png";
+import CastProvider from "react-chromecast";
 
-const API_BASE = "https://api.angelthump.com/v2";
+const API_BASE = "https://api.angelthump.com/v3";
 
 export default function PasswordProtect(props) {
   const [showPlayer, setShowPlayer] = useState(undefined);
   const [error, setError] = useState(undefined);
   const [password, setPassword] = useState("");
-  const { data, channel } = props;
+  const { userData, streamData, channel } = props;
 
   const checkPass = (e) => {
     e.preventDefault();
-    fetch(`${API_BASE}/user/stream_password`, {
+    setError(false);
+    fetch(`${API_BASE}/streams/password`, {
       method: "post",
       body: JSON.stringify({
+        user_id: userData.id,
         stream: channel,
         password: password,
       }),
@@ -27,13 +30,13 @@ export default function PasswordProtect(props) {
         return response.json();
       })
       .then((data) => {
-        setShowPlayer(data.success);
-        if (!data.success) setError(true);
+        setShowPlayer(!data.error);
+        if (data.error) setError(true);
       })
       .catch((e) => {
         console.error(e);
         setShowPlayer(false);
-        if (!data.success) setError(true);
+        setError(true);
       });
   };
 
@@ -42,7 +45,9 @@ export default function PasswordProtect(props) {
   };
 
   return showPlayer ? (
-    <Player data={data} channel={channel} />
+    <CastProvider>
+      <Player userData={userData} streamData={streamData} channel={channel} />
+    </CastProvider>
   ) : (
     <Box
       sx={{

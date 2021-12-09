@@ -50,8 +50,8 @@ const getToken = async (channel, usePatreonServers) => {
 };
 
 export default function Player(props) {
-  const { channel, data } = props;
-  const [live, setLive] = useState(data && /*data.type === "live"*/ true);
+  const { channel, streamData, userData } = props;
+  const [live, setLive] = useState(streamData && streamData.type === "live");
   const [player, setPlayer] = useState(null);
   const [videoContainer, setVideoContainer] = useState(null);
   const [overlayVisible, setOverlayVisible] = useState(true);
@@ -74,6 +74,10 @@ export default function Player(props) {
     if (node) node.focus();
     setVideoContainer(node);
   }, []);
+
+  useEffect(() => {
+    setLive(streamData && streamData.type === "live");
+  }, [props.streamData]);
 
   useEffect(() => {
     if (!channel) return;
@@ -152,7 +156,6 @@ export default function Player(props) {
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
-        console.log(data);
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -298,7 +301,7 @@ export default function Player(props) {
               {!live && (
                 <OfflineBanner
                   style={{
-                    backgroundImage: `url('${data && data.user.offline_banner_url}')`,
+                    backgroundImage: `url('${userData && userData.offline_banner_url}')`,
                   }}
                 />
               )}
