@@ -1,11 +1,12 @@
 import { Paper, MenuList, MenuItem, ListItemText, Typography, Box, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useEffect, useState } from "react";
+import Hls from "hls.js";
 
 let currentFrameCount = 0;
 
 export default function Stats(props) {
-  const { player, playerAPI, hls, setShowStats } = props;
+  const { player, hls, setShowStats } = props;
   const [stats, setStats] = useState({});
 
   const closeStats = (e) => {
@@ -13,7 +14,7 @@ export default function Stats(props) {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const getStats = () => {
       const videoPlaybackQuality = player ? player.getVideoPlaybackQuality() : null;
       setStats({
         playerHeight: player ? player.clientHeight : 0,
@@ -22,17 +23,19 @@ export default function Stats(props) {
         videoWidth: player ? player.videoWidth : 0,
         fps: player ? player.webkitDecodedFrameCount - currentFrameCount : 0,
         droppedFrames: videoPlaybackQuality ? `${videoPlaybackQuality.droppedVideoFrames}/${videoPlaybackQuality.totalVideoFrames}` : `0/0`,
-        bufferSize: player ? `${Math.round((player.buffered.end(0) - player.buffered.start(0) + Number.EPSILON) * 100) / 100} secs` : `0 secs`,
+        bufferSize: player && player.buffered.length > 0 ? `${Math.round((player.buffered.end(0) - player.buffered.start(0) + Number.EPSILON) * 100) / 100} secs` : `0 secs`,
         latency: hls ? `${Math.round(hls.latency * 10) / 10} secs` : `0 secs`,
         connectionSpeed: hls ? `${Math.round(hls.bandwidthEstimate / 1000)} kbps` : `0 kbps`,
-        hlsJsVersion: playerAPI.hlsJsVersion,
-        playerVersion: playerAPI.version,
+        hlsJsVersion: hls ? Hls.version : null,
+        playerVersion: process.env.REACT_APP_VERSION,
       });
       currentFrameCount = player ? player.webkitDecodedFrameCount : 0;
-    }, 1000);
+    };
+    getStats();
+    const interval = setInterval(getStats, 1000);
 
     return () => clearInterval(interval);
-  }, [player, hls, playerAPI]);
+  }, [player, hls]);
 
   return (
     <Box sx={{ position: "absolute" }}>
@@ -73,29 +76,35 @@ export default function Stats(props) {
             </ListItemText>
             <Typography variant="caption">{`${stats.bufferSize}`}</Typography>
           </MenuItem>
-          <MenuItem divider>
-            <ListItemText disableTypography>
-              <Typography variant="caption">{`Latency`}</Typography>
-            </ListItemText>
-            <Typography variant="caption">{`${stats.latency}`}</Typography>
-          </MenuItem>
-          <MenuItem divider>
-            <ListItemText disableTypography>
-              <Typography variant="caption">{`Connection Speed`}</Typography>
-            </ListItemText>
-            <Typography variant="caption">{`${stats.connectionSpeed}`}</Typography>
-          </MenuItem>
-          <MenuItem divider>
-            <ListItemText disableTypography>
-              <Typography variant="caption">{`hls.js Version`}</Typography>
-            </ListItemText>
-            <Typography variant="caption">{`${stats.hlsJsVersion}`}</Typography>
-          </MenuItem>
+          {hls && (
+            <MenuItem divider>
+              <ListItemText disableTypography>
+                <Typography variant="caption">{`Latency`}</Typography>
+              </ListItemText>
+              <Typography variant="caption">{`${stats.latency}`}</Typography>
+            </MenuItem>
+          )}
+          {hls && !hls.userConfig.progressive && (
+            <MenuItem divider>
+              <ListItemText disableTypography>
+                <Typography variant="caption">{`Connection Speed`}</Typography>
+              </ListItemText>
+              <Typography variant="caption">{`${stats.connectionSpeed}`}</Typography>
+            </MenuItem>
+          )}
+          {hls && (
+            <MenuItem divider>
+              <ListItemText disableTypography>
+                <Typography variant="caption">{`hls.js Version`}</Typography>
+              </ListItemText>
+              <Typography variant="caption">{`${stats.hlsJsVersion}`}</Typography>
+            </MenuItem>
+          )}
           <MenuItem divider>
             <ListItemText disableTypography>
               <Typography variant="caption">{`Player Version`}</Typography>
             </ListItemText>
-            <Typography variant="caption">{`${stats.version}`}</Typography>
+            <Typography variant="caption">{`${stats.playerVersion}`}</Typography>
           </MenuItem>
         </MenuList>
       </Paper>

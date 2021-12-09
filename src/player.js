@@ -1,14 +1,16 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Box, Typography, IconButton, CircularProgress, useMediaQuery } from "@mui/material";
+import { styled, Grid, Box, Typography, IconButton, CircularProgress, useMediaQuery, Link } from "@mui/material";
 import { useCallback, forwardRef, useState, useEffect, useRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
 import Controls from "./Controls";
-import { isDev } from "./utils/Dev";
 import biblethump from "./assets/biblethump.png";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { debounce } from "lodash";
 import Stats from "./Stats";
+import patreonImg from "./assets/patreon.png";
+
+const IDENTIFIER = "SwnpX0RnA99YdRj0SPqs";
 
 const hlsjsOptions = {
   debug: false,
@@ -16,27 +18,46 @@ const hlsjsOptions = {
   startLevel: JSON.parse(localStorageGetItem("level")) || 0,
   liveSyncDurationCount: 2,
   maxBufferSize: 10 * 1000 * 1000,
-  backBufferLength: 0,
+  backBufferLength: 60,
   startFragPrefetch: true,
   defaultAudioCodec: "mp4a.40.2",
-  //progressive: true,
+  progressive: false,
 };
-const M3U8_BASE = isDev ? "https://nyc-haproxy.angelthump.com" : "https://vigor.angelthump.com",
+const M3U8_BASE = "https://vigor.angelthump.com",
   MSE = Hls.isSupported(),
-  WEBSOCKET_URI = "wss://viewer-api.angelthump.com:8888/uws";
+  WEBSOCKET_URI = "wss://uws.angelthump.com/ws";
 let hls;
+
+const getToken = async (channel, usePatreonServers) => {
+  const token = await fetch(`https://vigor.angelthump.com/${channel}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Identifier: IDENTIFIER,
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      patreon: usePatreonServers,
+    }),
+  })
+    .then((response) => response.json())
+    .then((response) => response.token)
+    .catch((e) => {
+      console.error(e);
+      return null;
+    });
+  return token;
+};
 
 export default function Player(props) {
   const { channel, data } = props;
-  const [live, setLive] = useState(data && data.type === "live");
+  const [live, setLive] = useState(data && /*data.type === "live"*/ true);
   const [player, setPlayer] = useState(null);
   const [videoContainer, setVideoContainer] = useState(null);
   const [overlayVisible, setOverlayVisible] = useState(true);
   const [usePatreonServers, setPatreonServers] = useState(JSON.parse(localStorageGetItem("patreon")) || false);
   const [showStats, setShowStats] = useState(false);
   const [playerAPI, setPlayerAPI] = useState({
-    version: process.env.REACT_APP_VERSION,
-    hlsJsVersion: Hls.version,
     fullscreen: false,
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
@@ -58,7 +79,7 @@ export default function Player(props) {
     if (!channel) return;
     const ws_connect = () => {
       ws.current = new WebSocket(WEBSOCKET_URI);
-      ws.current.onopen = () => ws.current.send(JSON.stringify({ action: "subscribe", channel: channel }));
+      ws.current.onopen = (evt) => evt.target.send(JSON.stringify({ action: "subscribe", channel: channel }));
       ws.current.onclose = () => setTimeout(ws_connect, 5000);
 
       ws.current.onmessage = (message) => {
@@ -96,11 +117,7 @@ export default function Player(props) {
     };
 
     player.onplay = () => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false }));
-      if (MSE) hls.startLoad();
-      //Shift back to live
-      player.currentTime = -1;
-      if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "join", channel: channel }));
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false, buffering: false }));
     };
 
     player.onplaying = () => {
@@ -108,30 +125,35 @@ export default function Player(props) {
     };
 
     player.onpause = () => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true }));
-      //stop downloading ts files when paused.
-      if (MSE) hls.stopLoad();
-      if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true, buffering: false }));
     };
 
-    const source = isDev ? `${M3U8_BASE}/hls/${channel}/index.m3u8?patreon=${usePatreonServers}` : `${M3U8_BASE}/hls/${channel}.m3u8?patreon=${usePatreonServers}`;
+    const source = `${M3U8_BASE}/hls/${channel}.m3u8`;
     setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: JSON.parse(localStorageGetItem("volume")) || 1, muted: player.muted }));
 
     const loadHLS = () => {
       hls = new Hls(hlsjsOptions);
       hls.attachMedia(player);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      hls.on(Hls.Events.MEDIA_ATTACHED, async () => {
         console.info("HLS attached to media");
-        hls.loadSource(source);
+        const token = await getToken(channel, usePatreonServers);
+        if (!token) {
+          if (usePatreonServers) {
+            alert("Not a patron or not logged in!");
+            localStorageSetItem("patreon", false);
+            setPatreonServers(false);
+          }
+          return;
+        }
+        hls.loadSource(`${source}?token=${token}`);
         hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
           player.play();
         });
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
+        console.log(data);
         if (data.fatal) {
-          if (ws.current && ws.current.readyState === 1) ws.current.send(JSON.stringify({ action: "leave", channel: channel }));
-
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
               console.error(data);
@@ -152,13 +174,25 @@ export default function Player(props) {
       });
     };
 
-    if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
-      console.info("HLS MODE: NATIVE");
-      player.src = source;
+    const loadNative = async () => {
+      const token = await getToken(channel, usePatreonServers);
+      if (!token) {
+        if (usePatreonServers) {
+          alert("Not a patron or not logged in!");
+          setPatreonServers(false);
+        }
+        return;
+      }
+      player.src = `${source}?token=${token}`;
 
       player.addEventListener("loadedmetadata", function () {
         player.play();
       });
+    };
+
+    if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
+      console.info("HLS MODE: NATIVE");
+      loadNative();
     } else if (MSE) {
       console.info("HLS MODE: MSE");
       loadHLS();
@@ -214,17 +248,38 @@ export default function Player(props) {
 
   const onKey = (e) => {
     switch (e.keyCode) {
-      case 32:
+      case 32: {
+        e.preventDefault();
         playerAPI.paused ? player.play() : player.pause();
         break;
-      case 77:
+      }
+      case 77: {
+        e.preventDefault();
         player.muted = !playerAPI.muted;
         break;
-      case 70:
+      }
+      case 70: {
+        e.preventDefault();
         handleFullscreen();
         break;
-      default:
+      }
+      case 37: {
+        e.preventDefault();
+        const currentTime = player.currentTime;
+        if (currentTime - 5 < 0) return (player.currentTime = 0);
+        player.currentTime = currentTime - 5;
         break;
+      }
+      case 39: {
+        e.preventDefault();
+        const currentTime = player.currentTime;
+        if (currentTime + 5 > player.duration) return (player.currentTime = player.duration);
+        player.currentTime = currentTime + 5;
+        break;
+      }
+      default: {
+        break;
+      }
     }
   };
 
@@ -252,6 +307,13 @@ export default function Player(props) {
                   <CircularProgress />
                 </Box>
               )}
+              {!usePatreonServers && (
+                <Box sx={{ right: 0, position: "absolute", userSelect: "none" }}>
+                  <Link href={`https://patreon.com/join/angelthump`} target="_blank" rel="noreferrer noopener">
+                    <img alt="" src={patreonImg} />
+                  </Link>
+                </Box>
+              )}
               {playerAPI.paused && (
                 <PlayOverlay onClick={() => player.play()}>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
@@ -272,7 +334,6 @@ export default function Player(props) {
                 overlayVisible={live ? overlayVisible : true}
                 handleFullscreen={handleFullscreen}
                 handlePIP={handlePIP}
-                channel={channel}
                 patreon={usePatreonServers}
                 setPatreonServers={setPatreonServers}
                 showStats={showStats}

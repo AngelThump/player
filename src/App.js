@@ -3,6 +3,7 @@ import { createTheme, ThemeProvider, responsiveFontSizes } from "@mui/material/s
 import { CssBaseline, styled } from "@mui/material";
 import Player from "./Player";
 import PasswordProtect from "./PasswordProtect";
+import CastProvider from "react-chromecast";
 
 const search = window.location.search;
 const params = new URLSearchParams(search);
@@ -49,11 +50,15 @@ export default function App() {
         {data === undefined ? (
           <></>
         ) : data === null || !data.user ? (
-          <Player channel={channel} />
+          <CastProvider>
+            <Player channel={channel} />
+          </CastProvider>
         ) : data.user.password_protect ? (
           <PasswordProtect channel={channel} data={data} />
         ) : (
-          <Player channel={channel} data={data} />
+          <CastProvider>
+            <Player channel={channel} data={data} />
+          </CastProvider>
         )}
       </Parent>
     </ThemeProvider>
