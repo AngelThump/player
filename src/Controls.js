@@ -204,7 +204,7 @@ export default function Controls(props) {
                 </>
               </ClickAwayListener>
             )}
-            <Cast />
+            {live && <Cast src={(hls && hls.url) || (player && player.src)} />}
             {playerAPI.pip ? (
               <Tooltip enterTouchDelay={0} title="Exit Picture-in-Picture" disableInteractive>
                 <IconButton onClick={handlePIP} disabled={!playerAPI.canUsePIP}>

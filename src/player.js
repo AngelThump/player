@@ -77,8 +77,8 @@ export default function Player(props) {
 
   useEffect(() => {
     setLive(streamData && streamData.type === "live");
-  }, [props.streamData]);
-
+  }, [streamData]);
+  
   useEffect(() => {
     if (!channel) return;
     const ws_connect = () => {
