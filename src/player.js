@@ -15,7 +15,7 @@ const IDENTIFIER = "SwnpX0RnA99YdRj0SPqs";
 const hlsjsOptions = {
   debug: false,
   enableWorker: true,
-  startLevel: JSON.parse(localStorageGetItem("level")) || 0,
+  startLevel: JSON.parse(localStorageGetItem("level")) || undefined,
   liveSyncDurationCount: 2,
   maxBufferSize: 10 * 1000 * 1000,
   backBufferLength: 60,
@@ -78,7 +78,7 @@ export default function Player(props) {
   useEffect(() => {
     setLive(streamData && streamData.type === "live");
   }, [streamData]);
-  
+
   useEffect(() => {
     if (!channel) return;
     const ws_connect = () => {
@@ -206,7 +206,7 @@ export default function Player(props) {
     return () => {
       if (hls) hls.destroy();
     };
-  }, [player, channel, usePatreonServers]);
+  }, [player, channel, usePatreonServers, live]);
 
   const disableOverlay = () => {
     if (!overlayVisible) return;
@@ -266,6 +266,7 @@ export default function Player(props) {
         handleFullscreen();
         break;
       }
+      /*
       case 37: {
         e.preventDefault();
         const currentTime = player.currentTime;
@@ -279,7 +280,7 @@ export default function Player(props) {
         if (currentTime + 5 > player.duration) return (player.currentTime = player.duration);
         player.currentTime = currentTime + 5;
         break;
-      }
+      }*/
       default: {
         break;
       }

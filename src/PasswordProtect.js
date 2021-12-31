@@ -19,7 +19,6 @@ export default function PasswordProtect(props) {
       method: "post",
       body: JSON.stringify({
         user_id: userData.id,
-        stream: channel,
         password: password,
       }),
       headers: {

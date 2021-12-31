@@ -17,12 +17,13 @@ import Cast from "./cast";
 export default function Controls(props) {
   const [showSettings, setShowSettings] = useState(false);
   const [menuToShow, setMenuToShow] = useState("");
-  const [position, setPosition] = useState(undefined);
-  const [startBuffer, setStartBuffer] = useState(undefined);
-  const [duration, setDuration] = useState(undefined);
+  //const [position, setPosition] = useState(undefined);
+  //const [startBuffer, setStartBuffer] = useState(undefined);
+  //const [duration, setDuration] = useState(undefined);
   const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats } = props;
+  const [currentLevel, setCurrentLevel] = useState(undefined);
 
-  useEffect(() => {
+  /*useEffect(() => {
     if (!player) return;
     const getTime = () => {
       setStartBuffer(player.buffered.length > 0 ? player.buffered.start(0) : 0);
@@ -33,7 +34,28 @@ export default function Controls(props) {
     const interval = setInterval(getTime, 1000);
 
     return () => clearInterval(interval);
-  }, [player, hls]);
+  }, [player, hls]);*/
+
+  useEffect(() => {
+    if (!hls) return;
+
+    const initalize = async () => {
+      while (hls.currentLevel === -1) {
+        await sleep(100);
+      }
+
+      const reversedLevels = hls.levels.slice(0).reverse();
+      const currentIndex = reversedLevels.findIndex((tmpLevel) => tmpLevel.attrs.VIDEO === hls.levels[hls.currentLevel].attrs.VIDEO);
+
+      setCurrentLevel(currentIndex);
+    };
+
+    const sleep = async (ms) => {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    };
+
+    initalize();
+  }, [hls]);
 
   const playHandler = () => {
     playerAPI.paused ? player.play() : player.pause();
@@ -56,12 +78,15 @@ export default function Controls(props) {
     setShowSettings(false);
   };
 
-  const handleQualityChange = (e, index) => {
-    if (hls) {
-      if (hls.currentLevel === index) return;
-      hls.nextLevel = index;
-      localStorageSetItem("level", index);
-    }
+  const handleQualityChange = (e, i, level) => {
+    if (!hls) return;
+    const correctIndex = hls.levels.findIndex((tmpLevel) => level.attrs.VIDEO === tmpLevel.attrs.VIDEO);
+    if (correctIndex === -1) return;
+    if (correctIndex === hls.currentLevel) return;
+
+    hls.currentLevel = correctIndex;
+    localStorageSetItem("level", correctIndex);
+    setCurrentLevel(i);
   };
 
   const handlePatreonServers = (e) => {
@@ -73,17 +98,18 @@ export default function Controls(props) {
     setShowStats(!showStats);
   };
 
-  const handleTimeChange = (e, value) => {
+  /*const handleTimeChange = (e, value) => {
     player.currentTime = value;
     setPosition(player.currentTime);
-  };
+  };*/
 
   return (
     <Fade in={overlayVisible} onDoubleClick={(e) => e.stopPropagation()}>
       <Parent>
-        {live && !isNaN(duration) && !isNaN(position) && !isNaN(startBuffer) && (
+        {/* WIP
+        live && !isNaN(duration) && !isNaN(position) && !isNaN(startBuffer) && (
           <Slider size="small" valueLabelDisplay="auto" valueLabelFormat={formatTime} value={position} min={startBuffer} step={1} max={duration} onChange={handleTimeChange} />
-        )}
+        )*/}
         <Box sx={{ display: "flex" }}>
           <ControlGroup style={{ justifyContent: "flex-start" }}>
             {live && (
@@ -117,6 +143,8 @@ export default function Controls(props) {
                 <Box sx={{ height: "100%", width: "7rem", display: "flex", alignItems: "center", ml: 1 }}>
                   {playerAPI.muted === undefined ? <></> : <Slider size="small" value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />}
                 </Box>
+                {/**
+                 * WIP
                 <Box
                   sx={{
                     ml: 1.5,
@@ -131,16 +159,17 @@ export default function Controls(props) {
                   </Box>
                   <Typography variant="caption">{`${formatTime(duration)}`}</Typography>
                 </Box>
+                 */}
               </>
             )}
           </ControlGroup>
           <ControlGroup style={{ justifyContent: "flex-end" }}>
             {live && (
               <ClickAwayListener onClickAway={handleClickAway}>
-                <>
+                <Box>
                   {showSettings && (
-                    <Box sx={{ position: "absolute", inset: "auto 0px 100% auto", mr: 6, mb: -5 }}>
-                      <Paper sx={{ minWidth: 200, display: "inline-block", background: "#050404" }}>
+                    <Box sx={{ position: "absolute", inset: "auto 0px 100% auto", mr: 6, mb: -1 }}>
+                      <Paper sx={{ minWidth: 220, display: "inline-block", background: "#050404" }}>
                         {menuToShow === "quality" ? (
                           <MenuList>
                             <MenuItem onClick={() => setMenuToShow("")}>
@@ -148,17 +177,20 @@ export default function Controls(props) {
                             </MenuItem>
                             <Divider />
                             {hls &&
-                              hls.levels.map((level, i) => (
-                                <MenuItem
-                                  key={`level ${i}`}
-                                  onClick={(e) => {
-                                    handleQualityChange(e, i);
-                                  }}
-                                >
-                                  <ListItemIcon>{hls.currentLevel === i ? <RadioButtonCheckedIcon color="primary" /> : <RadioButtonUncheckedIcon color="primary" />}</ListItemIcon>
-                                  <ListItemText>{`${level.length > 0 ? level.name : "Source"}`}</ListItemText>
-                                </MenuItem>
-                              ))}
+                              hls.levels
+                                .slice(0)
+                                .reverse()
+                                .map((level, i) => (
+                                  <MenuItem
+                                    key={`level ${i}`}
+                                    onClick={(e) => {
+                                      handleQualityChange(e, i, level);
+                                    }}
+                                  >
+                                    <ListItemIcon>{currentLevel === i ? <RadioButtonCheckedIcon color="primary" /> : <RadioButtonUncheckedIcon color="primary" />}</ListItemIcon>
+                                    <ListItemText>{`${level.attrs.VIDEO}`}</ListItemText>
+                                  </MenuItem>
+                                ))}
                           </MenuList>
                         ) : menuToShow === "advanced" ? (
                           <MenuList>
@@ -176,9 +208,7 @@ export default function Controls(props) {
                             <MenuItem onClick={() => setMenuToShow("quality")}>
                               <ListItemText>Quality</ListItemText>
                               <Box sx={{ mr: 1 }}>
-                                <Typography variant="caption">{`${
-                                  hls && hls.levels[hls.currentLevel] && hls.levels[hls.currentLevel].name !== undefined ? hls.levels[hls.currentLevel].name : ""
-                                }`}</Typography>
+                                <Typography variant="caption">{`${hls && hls.levels[hls.currentLevel] && hls.levels[hls.currentLevel].attrs.VIDEO}`}</Typography>
                               </Box>
                               <Typography variant="body2">{`>`}</Typography>
                             </MenuItem>
@@ -201,7 +231,7 @@ export default function Controls(props) {
                       <SettingsIcon />
                     </IconButton>
                   </Tooltip>
-                </>
+                </Box>
               </ClickAwayListener>
             )}
             {live && <Cast src={(hls && hls.url) || (player && player.src)} />}
@@ -240,6 +270,7 @@ export default function Controls(props) {
   );
 }
 
+/*
 const formatTime = (time) => {
   const isTimeNaN = isNaN(time);
   const hours = !isTimeNaN ? Math.floor(time / 3600) : 0,
@@ -254,7 +285,7 @@ const formatTime = (time) => {
   ss = seconds.toString().padStart(2, "0");
 
   return `${hh ? `${hh}:` : ""}${mm}:${ss}`;
-};
+};*/
 
 const Parent = styled(forwardRef(({ ...props }, ref) => <div {...props} ref={ref} />))`
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0, rgba(0, 0, 0, 0.35) 60%, transparent);
