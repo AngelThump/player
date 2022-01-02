@@ -311,7 +311,7 @@ export default function Player(props) {
                   <CircularProgress />
                 </Box>
               )}
-              {!usePatreonServers && (
+              {!usePatreonServers && overlayVisible && (
                 <Box sx={{ right: 0, position: "absolute", userSelect: "none" }}>
                   <Link href={`https://patreon.com/join/angelthump`} target="_blank" rel="noreferrer noopener">
                     <img alt="" src={patreonImg} />
