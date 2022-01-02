@@ -314,7 +314,7 @@ export default function Player(props) {
               {!usePatreonServers && overlayVisible && (
                 <Box sx={{ right: 0, position: "absolute", userSelect: "none" }}>
                   <Link href={`https://patreon.com/join/angelthump`} target="_blank" rel="noreferrer noopener">
-                    <img alt="" src={patreonImg} />
+                    <img alt="" src={patreonImg} style={{ maxWidth: "100%", height: "auto" }} />
                   </Link>
                 </Box>
               )}
