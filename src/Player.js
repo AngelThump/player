@@ -193,7 +193,7 @@ export default function Player(props) {
       });
     };
 
-    if (!Hls.isSupported() && player.canPlayType("application/vnd.apple.mpegurl")) {
+    if (player.canPlayType("application/vnd.apple.mpegurl")) {
       console.info("HLS MODE: NATIVE");
       loadNative();
     } else if (MSE) {
