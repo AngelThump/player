@@ -62,9 +62,10 @@ export default function Player(props) {
     fullscreen: false,
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
+    buffering: true,
     volume: JSON.parse(localStorageGetItem("volume")) || 1,
   });
-  const [showPlayOverlay, setShowPlayOverlay] = useState(true);
+  const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const ws = useRef(null);
 
   const videoRef = useCallback((node) => {
@@ -124,11 +125,6 @@ export default function Player(props) {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, muted: player.muted, volume: player.volume }));
     };
 
-    /*
-    player.onplay = (e) => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
-    };*/
-
     player.onplaying = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false, buffering: false }));
       setShowPlayOverlay(false);
@@ -138,6 +134,15 @@ export default function Player(props) {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true, buffering: false }));
       setShowPlayOverlay(true);
     };
+
+    document.addEventListener("fullscreenchange", (e) => {
+      const isInFullScreen =
+        (document.fullscreenElement && document.fullscreenElement !== null) ||
+        (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
+        (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+        (document.msFullscreenElement && document.msFullscreenElement !== null);
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, fullscreen: isInFullScreen }));
+    });
 
     const source = `${M3U8_BASE}/hls/${channel}.m3u8`;
     setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: JSON.parse(localStorageGetItem("volume")) || 1, muted: player.muted }));
@@ -256,8 +261,6 @@ export default function Player(props) {
       const newOrientation = getOppositeOrientation();
       await window.screen.orientation.lock(newOrientation).catch((e) => console.error(e));
     }
-
-    setPlayerAPI({ ...playerAPI, fullscreen: !playerAPI.fullscreen });
   };
 
   const handlePIP = () => {
