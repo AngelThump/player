@@ -1,5 +1,5 @@
 import { localStorageGetItem, localStorageSetItem } from "./storage";
-import { styled, Grid, Box, Typography, IconButton, CircularProgress, useMediaQuery, Link } from "@mui/material";
+import { styled, Grid, Box, Typography, IconButton, CircularProgress, Link } from "@mui/material";
 import { useCallback, forwardRef, useState, useEffect, useRef } from "react";
 import canAutoplay from "can-autoplay";
 import Hls from "hls.js";
@@ -9,6 +9,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { debounce } from "lodash";
 import Stats from "./Stats";
 import patreonImg from "./assets/patreon.png";
+import { isMobile, isIOS } from "react-device-detect";
 
 const IDENTIFIER = "SwnpX0RnA99YdRj0SPqs";
 
@@ -63,8 +64,8 @@ export default function Player(props) {
     pip: false,
     volume: JSON.parse(localStorageGetItem("volume")) || 1,
   });
+  const [showPlayOverlay, setShowPlayOverlay] = useState(true);
   const ws = useRef(null);
-  const isMobile = useMediaQuery("(max-width: 800px)");
 
   const videoRef = useCallback((node) => {
     setPlayer(node);
@@ -110,7 +111,10 @@ export default function Player(props) {
 
   useEffect(() => {
     if (!player || !channel) return;
-    canAutoplay.video().then(function (obj) {
+    canAutoplay.video({ inline: true }).then(function (obj) {
+      //IOS 15+ won't autoplay muted videos..
+      if (obj.result === false && isIOS) return setShowPlayOverlay(true);
+
       player.muted = obj.result === true ? JSON.parse(localStorageGetItem("muted")) || false : (player.muted = true);
     });
 
@@ -120,16 +124,19 @@ export default function Player(props) {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, muted: player.muted, volume: player.volume }));
     };
 
-    player.onplay = () => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false, buffering: false }));
-    };
+    /*
+    player.onplay = (e) => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
+    };*/
 
     player.onplaying = () => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false, buffering: false }));
+      setShowPlayOverlay(false);
     };
 
     player.onpause = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true, buffering: false }));
+      setShowPlayOverlay(true);
     };
 
     const source = `${M3U8_BASE}/hls/${channel}.m3u8`;
@@ -150,9 +157,6 @@ export default function Player(props) {
           return;
         }
         hls.loadSource(`${source}?token=${token}`);
-        hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
-          player.play();
-        });
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
@@ -187,10 +191,6 @@ export default function Player(props) {
         return;
       }
       player.src = `${source}?token=${token}`;
-
-      player.addEventListener("loadedmetadata", function () {
-        player.play();
-      });
     };
 
     if (player.canPlayType("application/vnd.apple.mpegurl")) {
@@ -224,16 +224,32 @@ export default function Player(props) {
   const handleFullscreen = async (e) => {
     if (!videoContainer) return;
 
-    if (document.fullscreenElement === null) {
+    const isInFullScreen =
+      (document.fullscreenElement && document.fullscreenElement !== null) ||
+      (document.webkitFullscreenElement && document.webkitFullscreenElement !== null) ||
+      (document.mozFullScreenElement && document.mozFullScreenElement !== null) ||
+      (document.msFullscreenElement && document.msFullscreenElement !== null);
+
+    if (!isInFullScreen) {
       if (videoContainer.requestFullscreen) {
         videoContainer.requestFullscreen();
       } else if (videoContainer.mozRequestFullScreen) {
         videoContainer.mozRequestFullScreen();
       } else if (videoContainer.webkitRequestFullscreen) {
         videoContainer.webkitRequestFullscreen();
+      } else if (videoContainer.webkitEnterFullScreen) {
+        videoContainer.webkitEnterFullScreen();
       }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
     }
 
     if (isMobile) {
@@ -318,7 +334,7 @@ export default function Player(props) {
                   </Link>
                 </Box>
               )}
-              {playerAPI.paused && (
+              {showPlayOverlay && (
                 <PlayOverlay onClick={() => player.play()}>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", width: "100%" }}>
                     <Box sx={{ position: "absolute" }}>

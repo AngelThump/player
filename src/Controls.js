@@ -237,16 +237,20 @@ export default function Controls(props) {
             {live && <Cast src={(hls && hls.url) || (player && player.src)} />}
             {playerAPI.pip ? (
               <Tooltip enterTouchDelay={0} title="Exit Picture-in-Picture" disableInteractive>
-                <IconButton onClick={handlePIP} disabled={!playerAPI.canUsePIP}>
-                  <PictureInPictureIcon />
-                </IconButton>
+                <span>
+                  <IconButton onClick={handlePIP} disabled={!playerAPI.canUsePIP}>
+                    <PictureInPictureIcon />
+                  </IconButton>
+                </span>
               </Tooltip>
             ) : (
               <>
                 <Tooltip enterTouchDelay={0} title="Picture-in-Picture" disableInteractive>
-                  <IconButton onClick={handlePIP} disabled={!playerAPI.canUsePIP}>
-                    <PictureInPictureOutlinedIcon />
-                  </IconButton>
+                  <span>
+                    <IconButton onClick={handlePIP} disabled={!playerAPI.canUsePIP}>
+                      <PictureInPictureOutlinedIcon />
+                    </IconButton>
+                  </span>
                 </Tooltip>
               </>
             )}
