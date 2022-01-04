@@ -227,7 +227,7 @@ export default function Player(props) {
   };
 
   const handleFullscreen = async (e) => {
-    if (!videoContainer) return;
+    if (!player || !videoContainer) return;
 
     const isInFullScreen =
       (document.fullscreenElement && document.fullscreenElement !== null) ||
@@ -242,8 +242,8 @@ export default function Player(props) {
         videoContainer.mozRequestFullScreen();
       } else if (videoContainer.webkitRequestFullscreen) {
         videoContainer.webkitRequestFullscreen();
-      } else if (videoContainer.webkitEnterFullScreen) {
-        videoContainer.webkitEnterFullScreen();
+      } else if (player.webkitEnterFullScreen) {
+        player.webkitEnterFullScreen();
       }
     } else {
       if (document.exitFullscreen) {
