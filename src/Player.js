@@ -119,15 +119,23 @@ export default function Player(props) {
       player.muted = obj.result === true ? JSON.parse(localStorageGetItem("muted")) || false : (player.muted = true);
     });
 
-    player.onvolumechange = (event) => {
+    player.onvolumechange = () => {
       localStorageSetItem(`volume`, player.volume);
       localStorageSetItem(`muted`, player.muted);
       setPlayerAPI((playerAPI) => ({ ...playerAPI, muted: player.muted, volume: player.volume }));
     };
 
-    player.onplaying = () => {
-      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false, buffering: false }));
+    player.onplay = () => {
       setShowPlayOverlay(false);
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: false }));
+    };
+
+    player.onplaying = () => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
+    };
+
+    player.onwaiting = () => {
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: true }));
     };
 
     player.onpause = () => {
@@ -180,7 +188,6 @@ export default function Player(props) {
               break;
           }
         } else {
-          if (data.details === "bufferStalledError") setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: true }));
           console.error(data);
         }
       });
