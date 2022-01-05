@@ -208,7 +208,7 @@ export default function Controls(props) {
                             <MenuItem onClick={() => setMenuToShow("quality")}>
                               <ListItemText>Quality</ListItemText>
                               <Box sx={{ mr: 1 }}>
-                                <Typography variant="caption">{`${hls && hls.levels[hls.currentLevel] && hls.levels[hls.currentLevel].attrs.VIDEO}`}</Typography>
+                                <Typography variant="caption">{`${(hls && hls.levels[hls.currentLevel] && hls.levels[hls.currentLevel].attrs.VIDEO) || "Source"}`}</Typography>
                               </Box>
                               <Typography variant="body2">{`>`}</Typography>
                             </MenuItem>

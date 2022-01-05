@@ -198,12 +198,12 @@ export default function Player(props) {
       player.src = `${source}?token=${token}`;
     };
 
-    if (player.canPlayType("application/vnd.apple.mpegurl")) {
-      console.info("HLS MODE: NATIVE");
-      loadNative();
-    } else if (MSE) {
+    if (MSE) {
       console.info("HLS MODE: MSE");
       loadHLS();
+    } else if (player.canPlayType("application/vnd.apple.mpegurl")) {
+      console.info("HLS MODE: NATIVE");
+      loadNative();
     } else {
       console.info("Browser does not support Native HLS or MSE!");
     }
@@ -227,7 +227,7 @@ export default function Player(props) {
   };
 
   const handleFullscreen = async (e) => {
-    if (!player || !videoContainer) return;
+    if (!player && !videoContainer) return;
 
     const isInFullScreen =
       (document.fullscreenElement && document.fullscreenElement !== null) ||
@@ -236,30 +236,17 @@ export default function Player(props) {
       (document.msFullscreenElement && document.msFullscreenElement !== null);
 
     if (!isInFullScreen) {
-      if (videoContainer.requestFullscreen) {
-        videoContainer.requestFullscreen();
-      } else if (videoContainer.mozRequestFullScreen) {
-        videoContainer.mozRequestFullScreen();
-      } else if (videoContainer.webkitRequestFullscreen) {
-        videoContainer.webkitRequestFullscreen();
-      } else if (player.webkitEnterFullScreen) {
-        player.webkitEnterFullScreen();
-      }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
-    }
+      if (videoContainer.requestFullscreen) videoContainer.requestFullscreen();
+      else if (videoContainer.mozRequestFullScreen) videoContainer.mozRequestFullScreen();
+      else if (videoContainer.webkitRequestFullscreen) videoContainer.webkitRequestFullscreen();
+      else if (player.webkitEnterFullScreen) player.webkitEnterFullScreen();
 
-    if (isMobile) {
-      const newOrientation = getOppositeOrientation();
-      await window.screen.orientation.lock(newOrientation).catch((e) => console.error(e));
+      if (isMobile) window.screen.orientation.lock("landscape").catch((e) => console.error(e));
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     }
   };
 
@@ -304,11 +291,6 @@ export default function Player(props) {
         break;
       }
     }
-  };
-
-  const getOppositeOrientation = () => {
-    const { type } = window.screen.orientation;
-    return type.startsWith("portrait") ? "landscape" : "portrait";
   };
 
   return (
