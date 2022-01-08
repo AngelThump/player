@@ -27,7 +27,7 @@ export default function Stats(props) {
         latency: hls ? `${Math.round(hls.latency * 10) / 10} secs` : `0 secs`,
         connectionSpeed: hls ? `${Math.round(hls.bandwidthEstimate / 1000)} kbps` : `0 kbps`,
         hlsJsVersion: hls ? Hls.version : null,
-        playerVersion: process.env.REACT_APP_VERSION,
+        playerVersion: `${process.env.REACT_APP_VERSION}-${process.env.REACT_APP_GIT_COMMIT}`,
       });
       currentFrameCount = player ? player.webkitDecodedFrameCount : 0;
     };

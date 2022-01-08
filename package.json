@@ -26,7 +26,7 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "build": "cross-env react-app-rewired build && rm -rf prod/ && mv build/ prod/",
+    "build": "cross-env REACT_APP_GIT_COMMIT=`git rev-parse --short HEAD` react-app-rewired build && rm -rf prod/ && mv build/ prod/",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject"
   },
