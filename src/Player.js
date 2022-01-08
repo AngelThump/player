@@ -98,7 +98,7 @@ export default function Player(props) {
             window.location.search = `?channel=${jsonObject.punt_username}`;
             break;
           case "live":
-            console.info("ws sent live: " + jsonObject.live);
+            console.info(`ws sent live: ${jsonObject.live}`);
             setLive(jsonObject.live);
             break;
           default:
@@ -141,6 +141,26 @@ export default function Player(props) {
     player.onpause = () => {
       setPlayerAPI((playerAPI) => ({ ...playerAPI, paused: true, buffering: false }));
       setShowPlayOverlay(true);
+    };
+
+    player.onerror = async () => {
+      if (player.error.code === 4) {
+        console.info(`Edge is down. Retry..`);
+        if (MSE && hls) {
+          const token = await getToken(channel, usePatreonServers);
+          if (!token) {
+            if (usePatreonServers) {
+              alert("Not a patron or not logged in!");
+              localStorageSetItem("patreon", false);
+              setPatreonServers(false);
+            }
+            return;
+          }
+          hls.loadSource(`${source}?token=${token}`);
+        } else {
+          loadNative();
+        }
+      }
     };
 
     document.addEventListener("fullscreenchange", (e) => {
@@ -208,11 +228,13 @@ export default function Player(props) {
     if (MSE) {
       console.info("HLS MODE: MSE");
       loadHLS();
-    } else if (player.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (player.canPlayType && player.canPlayType("application/vnd.apple.mpegurl")) {
       console.info("HLS MODE: NATIVE");
       loadNative();
     } else {
-      console.info("Browser does not support Native HLS or MSE!");
+      //Force Native. May fix browsers where they do not use canPlayType. e.g PS4 browser
+      console.info("HLS MODE: FORCED NATIVE");
+      loadNative();
     }
 
     return () => {
