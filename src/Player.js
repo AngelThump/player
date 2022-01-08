@@ -407,6 +407,7 @@ const Video = styled(forwardRef(({ ...props }, ref) => <video {...props} ref={re
   height: 100%;
   position: absolute;
   width: 100%;
+  background: #000;
 `;
 
 const OfflineBanner = styled((props) => <div {...props} />)`
