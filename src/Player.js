@@ -63,7 +63,6 @@ export default function Player(props) {
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
     buffering: true,
-    volume: JSON.parse(localStorageGetItem("volume")) || 1,
   });
   const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const ws = useRef(null);
@@ -173,7 +172,8 @@ export default function Player(props) {
     });
 
     const source = `${M3U8_BASE}/hls/${channel}.m3u8`;
-    setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: JSON.parse(localStorageGetItem("volume")) || 1, muted: player.muted }));
+    player.volume = JSON.parse(localStorageGetItem("volume")) || 1;
+    setPlayerAPI((playerAPI) => ({ ...playerAPI, source: source, volume: player.volume, muted: player.muted }));
 
     const loadHLS = () => {
       hls = new Hls(hlsjsOptions);
@@ -232,9 +232,7 @@ export default function Player(props) {
       console.info("HLS MODE: NATIVE");
       loadNative();
     } else {
-      //Force Native. May fix browsers where they do not use canPlayType. e.g PS4 browser
-      console.info("HLS MODE: FORCED NATIVE");
-      loadNative();
+      console.error("Browser does not support MSE and Native HLS.");
     }
 
     return () => {
@@ -327,7 +325,7 @@ export default function Player(props) {
       {channel ? (
         <VideoContainer>
           <div tabIndex="-1" onKeyDown={onKey} ref={videoContainerRef} onMouseMove={mouseMove} onMouseLeave={() => setOverlayVisible(false)}>
-            <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} volume={JSON.parse(localStorageGetItem("volume")) || 1} />
+            <Video onContextMenu={(e) => e.preventDefault()} autoPlay playsInline ref={videoRef} />
             <Box onDoubleClick={handleFullscreen} sx={{ position: "absolute", inset: "0px" }}>
               {!live && (
                 <OfflineBanner
