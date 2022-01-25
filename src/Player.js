@@ -9,7 +9,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { debounce } from "lodash";
 import Stats from "./Stats";
 import patreonImg from "./assets/patreon.png";
-import { isMobile, isIOS } from "react-device-detect";
+import { isMobile } from "react-device-detect";
 
 const IDENTIFIER = "SwnpX0RnA99YdRj0SPqs";
 
@@ -63,6 +63,7 @@ export default function Player(props) {
     canUsePIP: document.pictureInPictureEnabled,
     pip: false,
     buffering: true,
+    paused: true,
   });
   const [showPlayOverlay, setShowPlayOverlay] = useState(false);
   const ws = useRef(null);
@@ -111,11 +112,16 @@ export default function Player(props) {
 
   useEffect(() => {
     if (!player || !channel) return;
-    canAutoplay.video({ inline: true }).then(function (obj) {
-      //IOS 15+ won't autoplay muted videos..
-      if (obj.result === false && isIOS) return setShowPlayOverlay(true);
 
-      player.muted = obj.result === true ? JSON.parse(localStorageGetItem("muted")) || false : (player.muted = true);
+    canAutoplay.video({ inline: true }).then(async (obj) => {
+      if (obj.result) return (player.muted = JSON.parse(localStorageGetItem("muted")) || false);
+
+      let mutedAutoplay = await canAutoplay.video({ muted: true, inline: true });
+      if (mutedAutoplay.result) return (player.muted = true);
+
+      //If autoplay && muted autoplay doesn't work, display play overlay.
+      setPlayerAPI((playerAPI) => ({ ...playerAPI, buffering: false }));
+      setShowPlayOverlay(true);
     });
 
     player.onvolumechange = () => {
@@ -263,9 +269,9 @@ export default function Player(props) {
       (document.msFullscreenElement && document.msFullscreenElement !== null);
 
     if (!isInFullScreen) {
-      if (videoContainer.requestFullscreen) videoContainer.requestFullscreen();
-      else if (videoContainer.mozRequestFullScreen) videoContainer.mozRequestFullScreen();
-      else if (videoContainer.webkitRequestFullscreen) videoContainer.webkitRequestFullscreen();
+      if (videoContainer.requestFullscreen) videoContainer.requestFullscreen({ navigationUI: "hide" });
+      else if (videoContainer.mozRequestFullScreen) videoContainer.mozRequestFullScreen({ navigationUI: "hide" });
+      else if (videoContainer.webkitRequestFullscreen) videoContainer.webkitRequestFullscreen({ navigationUI: "hide" });
       else if (player.webkitEnterFullScreen) player.webkitEnterFullScreen();
 
       if (isMobile) window.screen.orientation.lock("landscape").catch((e) => console.error(e));
