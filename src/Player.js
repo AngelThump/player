@@ -22,7 +22,7 @@ const hlsjsOptions = {
   backBufferLength: 60,
   startFragPrefetch: true,
   defaultAudioCodec: "mp4a.40.2",
-  progressive: false,
+  progressive: true,
 };
 const M3U8_BASE = "https://vigor.angelthump.com",
   MSE = Hls.isSupported(),
@@ -107,7 +107,7 @@ export default function Player(props) {
       };
     };
     ws_connect();
-    return (ws.current = null);
+    return () => (ws.current = null);
   }, [channel]);
 
   useEffect(() => {
