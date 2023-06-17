@@ -22,7 +22,7 @@ const hlsjsOptions = {
   backBufferLength: 60,
   startFragPrefetch: true,
   defaultAudioCodec: "mp4a.40.2",
-  progressive: true,
+  progressive: false, // cause some compability issues related to keyframes
 };
 const M3U8_BASE = "https://vigor.angelthump.com",
   MSE = Hls.isSupported(),
