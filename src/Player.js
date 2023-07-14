@@ -11,7 +11,8 @@ import Stats from "./Stats";
 import patreonImg from "./assets/patreon.png";
 import { isMobile } from "react-device-detect";
 
-const IDENTIFIER = "SwnpX0RnA99YdRj0SPqs";
+const IDENTIFIER = process.env.REACT_APP_IDENTIFER;
+console.log(IDENTIFIER);
 
 const hlsjsOptions = {
   debug: false,
@@ -214,7 +215,17 @@ export default function Player(props) {
               break;
           }
         } else {
-          console.error(data);
+          switch (data.type) {
+            case Hls.ErrorTypes.OTHER_ERROR:
+              if (data.details === "levelSwitchError") {
+                console.error(data);
+                localStorageSetItem(`level`, hls.firstLevel);
+              }
+              break;
+            default:
+              console.error(data);
+              break;
+          }
         }
       });
     };
