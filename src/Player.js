@@ -12,7 +12,6 @@ import patreonImg from "./assets/patreon.png";
 import { isMobile } from "react-device-detect";
 
 const IDENTIFIER = process.env.REACT_APP_IDENTIFER;
-console.log(IDENTIFIER);
 
 const hlsjsOptions = {
   debug: false,
