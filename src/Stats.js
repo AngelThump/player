@@ -25,6 +25,8 @@ export default function Stats(props) {
         droppedFrames: videoPlaybackQuality ? `${videoPlaybackQuality.droppedVideoFrames}/${videoPlaybackQuality.totalVideoFrames}` : `0/0`,
         bufferSize: player && player.buffered.length > 0 ? `${Math.round((player.buffered.end(0) - player.buffered.start(0) + Number.EPSILON) * 100) / 100} secs` : `0 secs`,
         latency: hls ? `${Math.round(hls.latency * 10) / 10} secs` : `0 secs`,
+        targetLatency: hls ? `${Math.round(hls.targetLatency * 10) / 10} secs` : `0 secs`,
+        drift: hls ? Math.trunc(hls.drift * Math.pow(10, 4)) / Math.pow(10, 4) : null,
         connectionSpeed: hls ? `${Math.round(hls.bandwidthEstimate / 1000)} kbps` : `0 kbps`,
         hlsJsVersion: hls ? Hls.version : null,
         playerVersion: `${process.env.REACT_APP_VERSION}-${process.env.REACT_APP_GIT_COMMIT}`,
@@ -77,12 +79,26 @@ export default function Stats(props) {
             <Typography variant="caption">{`${stats.bufferSize}`}</Typography>
           </MenuItem>
           {hls && (
-            <MenuItem divider>
-              <ListItemText disableTypography>
-                <Typography variant="caption">{`Latency`}</Typography>
-              </ListItemText>
-              <Typography variant="caption">{`${stats.latency}`}</Typography>
-            </MenuItem>
+            <div>
+              <MenuItem divider>
+                <ListItemText disableTypography>
+                  <Typography variant="caption">{`Latency`}</Typography>
+                </ListItemText>
+                <Typography variant="caption">{`${stats.latency}`}</Typography>
+              </MenuItem>
+              <MenuItem>
+                <ListItemText disableTypography>
+                  <Typography variant="caption">{`Target Latency`}</Typography>
+                </ListItemText>
+                <Typography variant="caption">{`${stats.targetLatency}`}</Typography>
+              </MenuItem>
+              <MenuItem divider>
+                <ListItemText disableTypography>
+                  <Typography variant="caption">{`Hls Drift`}</Typography>
+                </ListItemText>
+                <Typography variant="caption">{`${stats.drift}`}</Typography>
+              </MenuItem>
+            </div>
           )}
           {hls && !hls.userConfig.progressive && (
             <MenuItem divider>
