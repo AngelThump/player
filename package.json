@@ -1,29 +1,29 @@
 {
   "name": "angelthump-player",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "author": "Overpowered",
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.11.1",
+    "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
-    "@fontsource/roboto": "^5.0.5",
-    "@mui/icons-material": "^5.14.0",
-    "@mui/material": "^5.14.0",
-    "@mui/system": "^5.14.0",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/user-event": "^14.4.3",
+    "@fontsource/roboto": "^5.0.12",
+    "@mui/icons-material": "^5.15.11",
+    "@mui/material": "^5.15.11",
+    "@mui/system": "^5.15.11",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
     "can-autoplay": "^3.0.2",
     "cross-env": "^7.0.3",
-    "hls.js": "^1.4.9",
+    "hls.js": "^1.5.7",
     "lodash.debounce": "^4.0.8",
     "react": "^18.2.0",
     "react-chromecast": "^0.0.5-alpha",
     "react-device-detect": "^2.2.3",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
-    "web-vitals": "^3.4.0"
+    "web-vitals": "^3.5.2"
   },
   "scripts": {
     "start": "react-app-rewired start",
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "babel-plugin-import": "^1.13.6",
+    "babel-plugin-import": "^1.13.8",
     "customize-cra": "^1.0.0",
     "react-app-rewired": "^2.2.1"
   }
