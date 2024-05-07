@@ -16,8 +16,8 @@ const IDENTIFIER = process.env.REACT_APP_IDENTIFER;
 const hlsjsOptions = {
   debug: false,
   enableWorker: true,
-  startLevel: JSON.parse(localStorageGetItem("level")) || undefined,
-  liveSyncDurationCount: 2,
+  startLevel: JSON.parse(localStorageGetItem("level")) ?? undefined,
+  liveSyncDurationCount: 1,
   maxBufferSize: 10 * 1000 * 1000,
   backBufferLength: 60,
   startFragPrefetch: true,
