@@ -14,16 +14,14 @@ import { isMobile } from "react-device-detect";
 const IDENTIFIER = process.env.REACT_APP_IDENTIFER;
 
 const hlsjsOptions = {
-  debug: false,
+  debug: true,
   enableWorker: true,
   startLevel: JSON.parse(localStorageGetItem("level")) ?? undefined,
-  liveSyncDurationCount: 1,
-  maxBufferSize: 10 * 1000 * 1000,
-  backBufferLength: 60,
-  startFragPrefetch: true,
-  defaultAudioCodec: "mp4a.40.2",
+  liveSyncDurationCount: 2,
   progressive: false, // cause some compability issues related to keyframes
+  lowLatencyMode: false,
 };
+
 const M3U8_BASE = "https://vigor.angelthump.com",
   MSE = Hls.isSupported(),
   WEBSOCKET_URI = "wss://uws.angelthump.com/ws";
@@ -79,6 +77,7 @@ export default function Player(props) {
 
   useEffect(() => {
     setLive(streamData && streamData.type === "live");
+    return;
   }, [streamData]);
 
   useEffect(() => {
