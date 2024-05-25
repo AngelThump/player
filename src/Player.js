@@ -14,7 +14,7 @@ import { isMobile } from "react-device-detect";
 const IDENTIFIER = process.env.REACT_APP_IDENTIFER;
 
 const hlsjsOptions = {
-  debug: true,
+  debug: false,
   enableWorker: true,
   startLevel: JSON.parse(localStorageGetItem("level")) ?? undefined,
   liveSyncDurationCount: 2,
