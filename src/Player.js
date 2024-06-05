@@ -111,6 +111,10 @@ export default function Player(props) {
 
   useEffect(() => {
     if (!player || !channel) return;
+    console.log(player);
+    console.log(channel);
+    console.log(usePatreonServers);
+    console.log(live);
 
     canAutoplay.video({ inline: true }).then(async (obj) => {
       if (obj.result) return (player.muted = JSON.parse(localStorageGetItem("muted")) || false);
@@ -238,6 +242,7 @@ export default function Player(props) {
         return;
       }
       player.src = `${source}?token=${token}`;
+      player.play();
     };
 
     if (MSE) {
