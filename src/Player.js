@@ -195,6 +195,7 @@ export default function Player(props) {
           return;
         }
         hls.loadSource(`${source}?token=${token}`);
+        player.play();
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
