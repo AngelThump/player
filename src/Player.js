@@ -19,7 +19,7 @@ const hlsjsOptions = {
   startLevel: JSON.parse(localStorageGetItem("level")) ?? undefined,
   liveSyncDurationCount: 2,
   progressive: false, // cause some compability issues related to keyframes
-  lowLatencyMode: false,
+  lowLatencyMode: true,
 };
 
 const M3U8_BASE = "https://vigor.angelthump.com",
@@ -315,7 +315,6 @@ export default function Player(props) {
         handleFullscreen();
         break;
       }
-      /*
       case 37: {
         e.preventDefault();
         const currentTime = player.currentTime;
@@ -329,7 +328,7 @@ export default function Player(props) {
         if (currentTime + 5 > player.duration) return (player.currentTime = player.duration);
         player.currentTime = currentTime + 5;
         break;
-      }*/
+      }
       default: {
         break;
       }

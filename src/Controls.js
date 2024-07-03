@@ -17,13 +17,13 @@ import Cast from "./cast";
 export default function Controls(props) {
   const [showSettings, setShowSettings] = useState(false);
   const [menuToShow, setMenuToShow] = useState("");
-  //const [position, setPosition] = useState(undefined);
-  //const [startBuffer, setStartBuffer] = useState(undefined);
-  //const [duration, setDuration] = useState(undefined);
+  const [position, setPosition] = useState(undefined);
+  const [startBuffer, setStartBuffer] = useState(undefined);
+  const [duration, setDuration] = useState(undefined);
   const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats } = props;
   const [currentLevel, setCurrentLevel] = useState(undefined);
 
-  /*useEffect(() => {
+  useEffect(() => {
     if (!player) return;
     const getTime = () => {
       setStartBuffer(player.buffered.length > 0 ? player.buffered.start(0) : 0);
@@ -34,7 +34,7 @@ export default function Controls(props) {
     const interval = setInterval(getTime, 1000);
 
     return () => clearInterval(interval);
-  }, [player, hls]);*/
+  }, [player, hls]);
 
   useEffect(() => {
     if (!hls) return;
@@ -98,18 +98,18 @@ export default function Controls(props) {
     setShowStats(!showStats);
   };
 
-  /*const handleTimeChange = (e, value) => {
+  const handleTimeChange = (e, value) => {
     player.currentTime = value;
     setPosition(player.currentTime);
-  };*/
+  };
 
   return (
     <Fade in={overlayVisible} onDoubleClick={(e) => e.stopPropagation()}>
       <Parent>
-        {/* WIP
+        {
         live && !isNaN(duration) && !isNaN(position) && !isNaN(startBuffer) && (
           <Slider size="small" valueLabelDisplay="auto" valueLabelFormat={formatTime} value={position} min={startBuffer} step={1} max={duration} onChange={handleTimeChange} />
-        )*/}
+        )}
         <Box sx={{ display: "flex" }}>
           <ControlGroup style={{ justifyContent: "flex-start" }}>
             {live && (
@@ -143,8 +143,7 @@ export default function Controls(props) {
                 <Box sx={{ height: "100%", width: "7rem", display: "flex", alignItems: "center", ml: 1 }}>
                   {playerAPI.muted === undefined ? <></> : <Slider size="small" value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />}
                 </Box>
-                {/**
-                 * WIP
+               
                 <Box
                   sx={{
                     ml: 1.5,
@@ -159,7 +158,6 @@ export default function Controls(props) {
                   </Box>
                   <Typography variant="caption">{`${formatTime(duration)}`}</Typography>
                 </Box>
-                 */}
               </>
             )}
           </ControlGroup>
@@ -274,7 +272,7 @@ export default function Controls(props) {
   );
 }
 
-/*
+
 const formatTime = (time) => {
   const isTimeNaN = isNaN(time);
   const hours = !isTimeNaN ? Math.floor(time / 3600) : 0,
@@ -289,7 +287,7 @@ const formatTime = (time) => {
   ss = seconds.toString().padStart(2, "0");
 
   return `${hh ? `${hh}:` : ""}${mm}:${ss}`;
-};*/
+};
 
 const Parent = styled(forwardRef(({ ...props }, ref) => <div {...props} ref={ref} />))`
   background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0, rgba(0, 0, 0, 0.35) 60%, transparent);
