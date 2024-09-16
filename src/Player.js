@@ -385,6 +385,7 @@ export default function Player(props) {
                 setPatreonServers={setPatreonServers}
                 showStats={showStats}
                 setShowStats={setShowStats}
+                isMobile={isMobile}
               />
             </Box>
           </div>

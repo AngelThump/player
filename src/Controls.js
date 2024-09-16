@@ -20,7 +20,7 @@ export default function Controls(props) {
   const [position, setPosition] = useState(undefined);
   const [startBuffer, setStartBuffer] = useState(undefined);
   const [duration, setDuration] = useState(undefined);
-  const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats } = props;
+  const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats, isMobile } = props;
   const [currentLevel, setCurrentLevel] = useState(undefined);
 
   useEffect(() => {
@@ -106,12 +106,11 @@ export default function Controls(props) {
   return (
     <Fade in={overlayVisible} onDoubleClick={(e) => e.stopPropagation()}>
       <Parent>
-        {
-        live && !isNaN(duration) && !isNaN(position) && !isNaN(startBuffer) && (
+        {live && !isNaN(duration) && !isNaN(position) && !isNaN(startBuffer) && (
           <Slider size="small" valueLabelDisplay="auto" valueLabelFormat={formatTime} value={position} min={startBuffer} step={1} max={duration} onChange={handleTimeChange} />
         )}
         <Box sx={{ display: "flex" }}>
-          <ControlGroup style={{ justifyContent: "flex-start" }}>
+          <ControlGroup style={{ justifyContent: "flex-start", minWidth: 0 }}>
             {live && (
               <>
                 {playerAPI.paused ? (
@@ -140,10 +139,12 @@ export default function Controls(props) {
                     </IconButton>
                   </Tooltip>
                 )}
-                <Box sx={{ height: "100%", width: "7rem", display: "flex", alignItems: "center", ml: 1 }}>
-                  {playerAPI.muted === undefined ? <></> : <Slider size="small" value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />}
-                </Box>
-               
+                {!isMobile && (
+                  <Box sx={{ height: "100%", width: "7rem", display: "flex", alignItems: "center", ml: 1 }}>
+                    {playerAPI.muted !== undefined && <Slider size="small" value={playerAPI.muted ? 0 : playerAPI.volume * 100} onChange={handleVolumeChange} />}
+                  </Box>
+                )}
+
                 <Box
                   sx={{
                     ml: 1.5,
@@ -161,7 +162,7 @@ export default function Controls(props) {
               </>
             )}
           </ControlGroup>
-          <ControlGroup style={{ justifyContent: "flex-end" }}>
+          <ControlGroup style={{ justifyContent: "flex-end", minWidth: 0 }}>
             {live && (
               <ClickAwayListener onClickAway={handleClickAway}>
                 <Box>
@@ -271,7 +272,6 @@ export default function Controls(props) {
     </Fade>
   );
 }
-
 
 const formatTime = (time) => {
   const isTimeNaN = isNaN(time);
