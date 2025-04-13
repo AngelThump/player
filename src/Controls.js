@@ -20,7 +20,7 @@ export default function Controls(props) {
   const [position, setPosition] = useState(undefined);
   const [startBuffer, setStartBuffer] = useState(undefined);
   const [duration, setDuration] = useState(undefined);
-  const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats, isMobile } = props;
+  const { player, playerAPI, hls, live, overlayVisible, handleFullscreen, handlePIP, patreon, setPatreonServers, setShowStats, showStats, isMobile, streamData } = props;
   const [currentLevel, setCurrentLevel] = useState(undefined);
 
   useEffect(() => {
@@ -233,7 +233,7 @@ export default function Controls(props) {
                 </Box>
               </ClickAwayListener>
             )}
-            {live && <Cast src={(hls && hls.url) || (player && player.src)} />}
+            {live && <Cast src={(hls && hls.url) || (player && player.src)} _player={player} streamData={streamData} />}
             {playerAPI.pip ? (
               <Tooltip enterTouchDelay={0} title="Exit Picture-in-Picture" disableInteractive>
                 <span>

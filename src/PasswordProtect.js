@@ -2,7 +2,6 @@ import Player from "./Player";
 import { Alert, Stack, Input, Button, Box } from "@mui/material";
 import { useState } from "react";
 import logo from "./assets/logo.png";
-import CastProvider from "react-chromecast";
 
 const API_BASE = "https://api.angelthump.com/v3";
 
@@ -44,9 +43,7 @@ export default function PasswordProtect(props) {
   };
 
   return showPlayer ? (
-    <CastProvider>
-      <Player userData={userData} streamData={streamData} channel={channel} />
-    </CastProvider>
+    <Player userData={userData} streamData={streamData} channel={channel} />
   ) : (
     <Box
       sx={{

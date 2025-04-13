@@ -3,12 +3,13 @@ import { createTheme, ThemeProvider, responsiveFontSizes } from "@mui/material/s
 import { CssBaseline, styled } from "@mui/material";
 import Player from "./Player";
 import PasswordProtect from "./PasswordProtect";
-import CastProvider from "react-chromecast";
+import { CastProvider } from "react-cast-sender";
 
 const search = window.location.search;
 const params = new URLSearchParams(search);
 const channel = params.get("channel");
 const API_BASE = "https://api.angelthump.com/v3";
+const RECEIVER_APP_ID = process.env.REACT_APP_CHROMECAST_RECEIVER;
 
 export default function App() {
   const [streamData, setStreamData] = useState(undefined);
@@ -60,15 +61,15 @@ export default function App() {
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
       <Parent>
-        {userData === undefined ? (
-          <></>
-        ) : userData && userData.password_protect ? (
-          <PasswordProtect channel={channel} streamData={streamData} userData={userData} />
-        ) : (
-          <CastProvider>
+        <CastProvider receiverApplicationId={RECEIVER_APP_ID}>
+          {userData === undefined ? (
+            <></>
+          ) : userData && userData.password_protect ? (
+            <PasswordProtect channel={channel} streamData={streamData} userData={userData} />
+          ) : (
             <Player channel={channel} streamData={streamData} userData={userData} />
-          </CastProvider>
-        )}
+          )}
+        </CastProvider>
       </Parent>
     </ThemeProvider>
   );

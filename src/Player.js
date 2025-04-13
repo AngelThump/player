@@ -386,6 +386,7 @@ export default function Player(props) {
                 showStats={showStats}
                 setShowStats={setShowStats}
                 isMobile={isMobile}
+                streamData={streamData}
               />
             </Box>
           </div>
