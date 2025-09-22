@@ -16,7 +16,7 @@
     "@testing-library/user-event": "^14.6.1",
     "can-autoplay": "^3.0.2",
     "cross-env": "^7.0.3",
-    "hls.js": "^1.6.12",
+    "hls.js": "^1.6.13",
     "lodash.debounce": "^4.0.8",
     "react": "^19.1.1",
     "react-cast-sender": "^0.1.8",
